@@ -1,0 +1,101 @@
+---
+title: "Tick population model with different host groups"
+author: "sbsambado"
+date: "4/7/2020"
+output: html_document
+---
+
+```{r}
+library(deSolve)
+
+# trying to understand tick population across life stages and hosts
+  # hope to add host prevalences to these population dynamics
+  # first trying to create a functioning, and plausible tick population
+
+# ticks are broken into life stages (larva, nymph, adult)
+# hosts are broken into competency (C) (1 = high, 2 = medium, 3 = low)
+
+SIS.model <- function(t, x, params) {
+  Tl = x[1] # larvae
+  Tn = x[2] # nymphs
+  Ta = x[3] # adults
+
+# f is the probability of taking a blood meal 
+  # I've broken up blood meals into 3 options (C1, C2, C3)
+    # f1 - f3 is probability of larval blood meals on C1 - C3
+  f1 = params[1]
+  f2 = params[2]
+  f3 = params[3]
+    # f1 - f3 is probability of nymphal blood meals on C1 - C3
+  f4 = params[4]
+  f5 = params[5]
+  f6 = params[6]
+  
+  C1 = params[7] # Highly competent host (i.e. NEFU)
+  C2 = params[8] # Medium competent host (i.e Peromyscus mice)
+  C3 = params[9] # Lowly competent host (i.e. Lizard)
+  
+  # tick parameters
+  m = params[10] # molting rate from blood meal to next life stage
+  u = params[11] # natural mortality (not finding a blood meal)
+  d = params[12] # probability of adult finding a deer and successfully mating
+  h = params[13] # number of eggs hatching successfully into larvae
+  
+  # differential equations to track the change in tick life stages over time
+  dTldt = Tl*(f1*C1 - f2*C2 - f3*C3) + d*h*Ta - u*Tl 
+  dTndt = m*Tl*(f1*C1 + f2*C2 + f3*C3) - Tn*(f4*C1 - f5*C2 - f6*C3) - u*Tn
+  dTadt = m*Tn*(f4*C1 + f5*C2 + f6*C3) - d*h*Ta - u*Ta
+  # can't seem to stop making my adult population explode
+  return(list(c(dTldt, dTndt, dTadt)))
+}
+
+Tl0 = 500
+Tn0 = 200
+Ta0 = 100
+
+initial_values = c(Tl0, Tn0, Ta0)
+
+# Should my f1 - f3 = 1, f4 - f6 = 1, because the tick will have 1 blood meal but different probabilities of that blood meal being C1 - C3?
+  f1 =  0.2  # larval rate on feeding C1 host # NEFU
+  f2 =  0.2  # larval rate on feeding C2 host # PEROs
+  f3 =  0.6 # larval rate on feeding C3 host  # Lizard
+  f4 =  0.3  # nymphal rate on feeding C1 host
+  f5 =  0.1  # nymphal rate on feeding C2 host
+  f6 =  0.6  # nymphal rate on feeding C3 host
+  
+  # # I need help with this section, does it make sense to set Ci = 1 since a larva or nymph will only take 1 blood meal? 
+  
+  C1 = 1 # number of high competent hosts
+  C2 = 1 # number of medium competent hosts
+  C3 = 1 # number of low competent hosts 
+  
+  m = 0.7  # molting rate
+  u = 0.5 # mortality
+  d = 0.5 # success of finding a deer and mating
+  h = 0.4 # hatching rate of eggs into larvae 
+  
+parameters = c(f1, f2, f3, f4, f5, f6, C1, C2, C3, m, u, d, h)
+
+times = seq(0,100, by = 0.1)
+
+results = lsoda(initial_values, times, SIS.model, parameters)
+colnames(results) = c('time', 'larval', 'nymph', 'adult')
+head(results)
+
+plot(results[, 'time'], results[,'larval'], type = 'l', col = 'blue', 
+     xlab = 'time', ylab = 'abundance', ylim = c(0,1000))
+lines(results[,'time'], results[,'nymph'], type = 'l', col = 'red')
+lines(results[,'time'], results[,'adult'], type = 'l', col = 'green')
+legend('topleft', legend = c('larvae', 'nymphs', 'adults'),
+       col = c('blue', 'red', 'green'), lwd = 2)
+
+```
+Assumptions (to name a few)
+1. Molting rates are constant for each life stage
+2. Mortality rates are constant for each life stage 
+2. Competent levels are broken into 3 categories
+3. That larvae and nymphs feed at  different rte on each competent level
+4. Ticks are always present, no phenology driving presence
+5. No host community logistic growth, host community is always constant
+
+
