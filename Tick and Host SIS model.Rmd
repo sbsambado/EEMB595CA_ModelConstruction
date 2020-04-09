@@ -34,7 +34,7 @@ initial_values = c(S0, I0, U0, V0)
 
   beta = 0.9 # inoculation
   alpha = 0.8  # acquisition
-  gamma = 0.2 # host turnover I > S
+  gamma = 0.5 # host turnover I > S
   birth_v = 0.2 # birth of vectors
   death_v = 0.5 # death of vectors
 
@@ -54,4 +54,5 @@ lines(results[,'time'], results[,'infected tick'], type = 'l', col = 'red', lty 
 legend('topleft', legend = c('U hosts', 'I host', 'U vector', 'I vector'),
        col = c('blue', 'blue', 'red', 'red'), lwd = 2, lty = c(1,2,1,2), cex = 0.6)
 ```
+
 
