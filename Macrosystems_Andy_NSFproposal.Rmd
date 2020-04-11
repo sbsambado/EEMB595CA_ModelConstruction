@@ -1,0 +1,86 @@
+---
+title: "Macrosystems_Phenology_Andy_Proposal"
+author: "sbsambado"
+date: "4/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Andy MacDonald reached out and shared his NSF macrosystems proposal that he submitted with Ashley Larsen, Mark Wilbur, and Dan Sousa. The proposal incorporates NEON data, statistical models, and a coupled ODE model to explore B. burgdorferi amplification under different phenologies of the larvae and nymphs. More than majority of the text and modeling ideas are not mine and taken from MacDonald and company.  
+
+I am going to try to run Mark's ODE model section to help me develop ideas for my other phenology project. I would ideally like to extend this to B. miyamotoi and incorporate west coast and more midwest sites as a potential written exam or paper with Andy and company.
+
+Natural history of system:
+Ticks are strongly influenced by abiotic conditions like temperature and humidity. Recent research has suggested that regional and interannual differences in abiotic conditions like temperature and timing of spring green-up can influence host-seeking phenology of the different life stages of vector ticks.
+
+The timing of feeding for different life stages is important since B. burgdorferi is not transmitted vertically from a femal tick to offspring, but rather is acquired from feeding on infected hosts.
+
+Changes in the duration and phenology of feeding patterns could potentially lead to changes in the abundance of host-seeking ticks and infection prevalence in tick populations. 
+
+Uncovering the drivers of both geographic expansion and incidence of idsease, including how phenological (a)synchrony impacts both, is difficult. It is challenging to mechanistically link local patterns to pathogen transmission and huma risk across large and heterogeneous regions. The ecological processes and interactions that drive disease transmission vary across local to regional scales, making large-scale inferences based on a small number of local field observations, or limited replication of observations through time, subject to susbtantial bias. 
+
+Integrated data collection across spatial scales and grains of analysis, as well as through time, would provide the encessary variation in climate and land use context as well as annual variation in weather and other sources of stochasticity that dtermine both regional average patterns and annual variation in tick phenology and human disease incidence. 
+
+This proposal will focuse on understanding and predicting the abundance and infection prevalence of the nymph life stage. We will predict variabtion in nymphal abundance and infection prevalence as a function of life stage specific host seeking phenology of Ixodes scapularis across its range in eastern north america.
+
+
+Aim 1. Model pathogen amplifiction in nymphal tick cohorts as a function of the (a)synchronicity of larval and nymphal tick host-feeding
+- a) observe seasonal overlap in nymphs and larvae affects the maximum yearly prevalence of B. burgdorferi in nymphal ticks
+- b) presence of multiple transmission modes, (i.e. viraemic transmission: feeding on infectious host; non-viraemic transmission: co-feeding and transmitting pathogens difectly through the host), alter the observed effects of nymphal and larval (a)synchrony on lyme disease risk
+
+The model will break four tick life stages into 10 classes, where infected/uninfected indicates that we track whether or not a stage is infected or uninfected with B. burgdorferi
+  1. eggs
+  2. questing larvae
+  3. feeding larvae (I/U)
+  4. engorged larvae (I/U)
+  5. questing nymphs (I/U)
+  6. feeding nymphs (I/U)
+  7. engorged nymphs
+  8. questing adults
+  9. feeding adults
+  10. egg lay adults
+
+Assumptions
+1. 2 hosts
+-larvae + nymphs exclusively feed on(rodents)
+-adults exclusively feed on (deer)
+2. Do not track infection dynamics of host cause there's no vertical transmission (I will change this assumption later with B. miyamotoi)
+3. Hosts on which adult ticks feed (deer) have a constant density 
+
+The magnitude and variability in the time lag between these life stage transitions largely determines the degree of overlap between nymphs and larvae within a season
+- Magnitude of transition times depends on temperature and day length 
+** important to simultaneously consider how changes in the magnitude and variability in life stage transitions affect the degree of nymphal and larval overlap and subsequent bb prevalence
+
+
+## Question: How temperature-dependent life-stage transitions affect the synchrony of larvae and nymphs and how (a)synchrony impacts B. burgdorferi prevalence in tick popultion?
+- we will vary mean and coefficient of variation in the duration of the temperature-dependent life-stage transitions to explore a wide range of possible synchorny patterns between larvae and nymphs
+- model seasonal reproduction dynamics for the hosts of larvae and nymphs (H) to account for pulses of susceptible individuals
+- model diagram only include viraemic transmission, but we will also include non-viraemic transmission via co-feeding, accounting for aggregated distributions of nymphs and larvae on hosts
+- each state variable has a respective death rate which we do not show in diagram
+
+- we allow the distribution of itme spent in specific life stages to vary from an exponential distribution to a delta function (delayed differential equations)
+- we allow ticks to spend a gamma distributed amount of time in aprticular stages using the linear chain trick, with variance of gamma distribution shrinking to zero as it approaches the delta function
+-- this will allows us to vary both the mean time of emergence for different tick lfie stages and the coefficient of variaiton around the emergence time to examine how they independently affect synchrony and infection risk
+
+- perform simulation experiments where we independently vary 2 tick parameters in model and 1 host parameter (average time spent as engorged larve before trnsitioning to questing nymphs, coefficient of variation in this transision time & average time a host for nymphs and larvae spends as infected)
+- use latin hypercuve sampling design to draw parmters from the 3D parameter spce, simulte the model with ech prmeter sert until stble tick popultion cycles re obtined, compute degree of overlp between larval and nymphl population from previous cohort and compute mximum prevalence of infected nymphs within the yer
+
+- average host infection time as a varying parameter as previous studies show that effects of synchorny on disease risk depends on hos long a host can maintain an infection
+-- if a host can maintain an infection across seasons, we would expect (a)synchrony in N and L infection to have little effect on N prevalence s consistently high host prevalence dominates infection dynamics
+--- in contrast, if host loses infection or die before nymphs start feeding the following year, then we expect asynchrony to augemnet prevaelnce compared to synchrony, yet alternative transmission modes (co-feeding) could alter those predictions
+
+```{r}
+# create ODE that Mark made
+
+library(deSolve)
+
+tick_lifestage <- function(t, x, params) {
+  G <- x[]
+  Lq
+  
+}
+```
+

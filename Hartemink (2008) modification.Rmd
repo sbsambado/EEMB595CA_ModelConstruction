@@ -175,6 +175,8 @@ K
 
 
 ```
+# this is a nonnegative matrix with elements that are greater than or equal to zero
+# This makes it a irreducible matrix because the life cycle is strongly connected (i.e. there is a path in the graph from every node to every other node)
 
 Assumptions
 - Infectiousness of individuals is independent of the transmission route via which the infection was acquired, we distinguish 5 types-at-birth
