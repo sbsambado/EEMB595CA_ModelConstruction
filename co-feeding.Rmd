@@ -1,0 +1,60 @@
+---
+title: "Co-feeding"
+author: "sbsambado"
+date: "4/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+quantifying rate of co-fedding
+
+j = tick life stage
+  l = larva
+  n = nymph
+  a = adult
+i = host species
+  1 = high competency
+  2 = medium competency
+  3 = low competency 
+
+co-feeding: number of host * contact rate of tick life stage times host
+
+mj,i = Ni*Bj,i
+```{r}
+# values for matrix elements
+N1 = 1
+N2 = 2
+N3 = 3
+
+B = 0.3
+l = 100
+n = 50
+a = 10
+
+```
+
+```{r}
+# matrix element equations
+N1_Bl1 = N1 * B*l*N1
+N2_Bl2 = N2 * B*l*N2
+N3_Bl3 = N3 * B*l*N3
+
+N1_Bn1 = N1 * B*n*N1
+N2_Bn2 = N2 * B*n*N2
+N3_Bn3 = N3 * B*n*N3
+
+N1_Ba1 = N1 * B*a*N1
+N2_Ba2 = N1 * B*a*N2
+N3_Ba3 = N1 * B*a*N3
+```
+
+```{r}
+F = matrix(c(N1_Bl1, N2_Bl2,N3_Bl3,
+             N1_Bn1, N2_Bn2,N3_Bn3,
+             N1_Ba1, N2_Ba2,N3_Ba3))
+F
+```
+
