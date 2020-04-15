@@ -1,0 +1,100 @@
+---
+title: "Dynamic models setup"
+author: "sbsambado"
+date: "4/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Reading Dynamic Models by Ben Bolker (2006)
+
+dynamic models: models that describe how ecological processes drive populations to change over time
+
+dynamic models contain both 
+1) process error ( feeds back on future states of population)
+2) observation error (affects only the current observation)
+
+2. Simulating dynamic models
+
+dynamics models describe the changes in the size and characteristics of a population over time
+- at each time step except the first, the size and characteristics of the population depend on the size and characteristics at the previous time step
+
+To simulate a model
+a. set aside vector/matrix to record state of population
+b. set starting conditions for all state variables
+c. apply R commands to simulate population dynamics over the course of one time step, then apply R comands to simulate the observation process and record the current observed state of the population
+d. plot and analyze results
+
+2.1 Examples
+- construct dynamic models corresponding to 2 simple statistical models
+a. linear/normal
+b. hyperbolic/Poisson
+
+nt = number of time steps
+parameters = a, b, sd.obs
+```{r}
+# observation error
+
+N = numeric(nt)
+Nobs = numeric(nt)
+N[1] = a
+for (t in 1: (nt - 1)) {
+  N[t + 1] = b + N[t]
+  Nobs[t] = rnorm(1, mean = N[t], sd = sd.obs)
+}
+
+Nobs[nt] = rnorm(1, mean = N[nt])
+
+# process error
+
+N = numeric(nt)
+Nobs = numeric(nt)
+N[1] = a
+for(t in 1: (nt - 1)) {
+  N[t + 1] = rnorm(1, mean = b + N[t], sd = sd.proc)
+  Nobs[t] = N[t]
+}
+Nobs[nt] = N[nt]
+
+# assuming observations are perfect if Nobs(t) = N(t), that the change in population is noisy rather than deterministic
+
+```
+
+The expected behavior of this dynamical model is exactly the same whether the variability in the model is caused by observation error or process error
+- it's identical to the deterministic part of a standard linear model
+    N = a + b(t - 1)
+- the difference becomes apparent when we simulate many realizations of the same process and look at how the variation among realizations changes over time
+
+~ suppose that per capita plant fecundity declines with population density according to thhe hyperbolic function F(N) = a/ (b+N)
+ - next year's expected population size N(t + 1) = population size * per apita fecundity
+ 
+ 
+ 2.1.1 Continuous-time models
+ 
+Continuous models are frames as ordinary differential equation (ODE) models
+
+The discrete model rule N(t + 1) = f(N(t)) is replaced with dN/dt = f(N(t)), which specifies instantaneous population growth rate
+
+Best known ODE model is the logistic, dN/dt = rN(1 - N/K)
+
+Researchers use continuous time models for reasons including realism(for populations witho overlapping generations that can reproduce in any season), mathematical convenience (dynamics of continuous time models are often more stable than those of their discrte analogues), and consistency with theoretical models
+
+Most dynamic models have no closed-form solution (we can't write a simple equation for N(t)), so we simulate them
+
+1. The simplest algorithm for ismulating continuous time models is Euler's method
+- uses small time steps to approximate the continuous passage of time
+  - if we know instantaneous growth rate dN/dt = f(N(t)), we can approx change of pop over a short time interval delta_t saying population grows linearly at rate dN/dt 
+    - thus that delta_N ~ dN/dt * delta_t
+    
+2. However, Euler's is slow and we will probably need to solve them for thousands of different parameter values 
+- lsoda function in odesolve library (applied adaptive step size algorithm)
+- central problem with comparing ODE models to data is that incorporating stochasticity in any other way than simply imposing normally distributed observation error is difficult
+
+One can build dynamical models that are stochastic, discrete-valued and run in continuous time, picking random numbers for the waiting times until the next event (birth/death/(e)immigation/ infection)
+- basic algorithm for simulating these models == Gillespie algorithm
+
+
+3. Observation and process error
