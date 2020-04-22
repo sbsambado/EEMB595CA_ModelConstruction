@@ -71,16 +71,201 @@ The magnitude and variability in the time lag between these life stage transitio
 - average host infection time as a varying parameter as previous studies show that effects of synchorny on disease risk depends on hos long a host can maintain an infection
 -- if a host can maintain an infection across seasons, we would expect (a)synchrony in N and L infection to have little effect on N prevalence s consistently high host prevalence dominates infection dynamics
 --- in contrast, if host loses infection or die before nymphs start feeding the following year, then we expect asynchrony to augemnet prevaelnce compared to synchrony, yet alternative transmission modes (co-feeding) could alter those predictions
+```{r}
+# very basic, simple model to build off of
+
+library(deSolve)
+
+toy <- function(t, x, params) {
+  S = x[1] # susceptible host
+  I = x[2] # infected host
+  U = x[3] # susceptible vector
+  V = x[4] # infected vector
+  
+  beta = params[1] # inoculation
+  alpha = params[2] # acquisition
+  gamma = params[3] # host turnover I > S
+  birth_v = params[4] # birth of vectors
+  death_v = params[5] # death of vectors
+  
+  dSdt = - (beta*S*V)/(S + I) + gamma*I # S + I = N_host
+  dIdt = (beta*S*V)/(S + I) - gamma*I
+  dUdt = - (alpha*U*I)/(U + V) + birth_v*U - death_v*U # U + V = N_vector
+  dVdt = (alpha*U*I)/(U + V) + birth_v*V - death_v*V
+  
+  return(list(c(dSdt, dIdt, dUdt, dVdt)))
+}
+  
+S0 = 29
+I0 = 1
+U0 = 99
+V0 = 1
+
+initial_values = c(S0, I0, U0, V0)
+
+  beta = 0.9 # inoculation
+  alpha = 0.8  # acquisition
+  gamma = 0.5 # host turnover I > S
+  birth_v = 0.2 # birth of vectors
+  death_v = 0.5 # death of vectors
+
+parameters = c(beta, alpha, gamma, birth_v, death_v) 
+
+times = seq(0,30, 0.01)
+
+results = lsoda(initial_values, times, SIS.model.tick.host, parameters)
+colnames(results) = c('time', 'susceptible host', 'infected host', 'susceptible tick', 'infected tick')
+head(results)  
+
+plot(results[, 'time'], results[,'susceptible host'], type = 'l', col = 'blue', 
+     xlab = 'time', ylab = 'abundance', ylim = c(0,101), lty = 1)
+lines(results[,'time'], results[,'infected host'], type = 'l', col = 'blue', lty = 2)
+lines(results[,'time'], results[,'susceptible tick'], type = 'l', col = 'red', lty = 1)
+lines(results[,'time'], results[,'infected tick'], type = 'l', col = 'red', lty = 2)
+legend('topleft', legend = c('U hosts', 'I host', 'U vector', 'I vector'),
+       col = c('blue', 'blue', 'red', 'red'), lwd = 2, lty = c(1,2,1,2), cex = 0.6)
+```
 
 ```{r}
 # create ODE that Mark made
 
 library(deSolve)
 
-tick_lifestage <- function(t, x, params) {
-  G <- x[]
-  Lq
+Markish_tick_lifestage <- function(t, x, params) {
+  G <- x[1]
+  Lq <-x[2]
+  Lfi <-x[3]
+  Lfs <-x[4]
+  Lei <-x[5]
+  Les <-x[6]
   
+  Nqi <-x[7]
+  Nqs <-x[8]
+  Nfi <-x[9]
+  Nfs <-x[10]
+  Ne <-x[11]
+  
+  Aq <-x[12]
+  Af <-x[13]
+  Ae <-x[14]
+  
+  hatching = params[1]
+  attacking = params[2]
+  feeding = params[3]
+  molting = params[4]
+  birthing = params[5]
+  
+  dGdt <- birthing * - hatching
+  dLqdt <- hatching * - attacking
+  dLfidt <- attacking * - feeding
+  dLfsdt <- attacking * - feeding
+  dLeidt <- feeding * - molting
+  dLesdt <- feeding * - molting
+  
+  dNqidt <- molting * - attacking
+  dNqsdt <- molting * - attacking
+  dNfidt <- attacking * - feeding
+  dNfsdt <- attacking * - feeding
+  dNedt <- feeding * - molting
+  
+  dAqdt <- molting * - attacking
+  dAfdt <- attacking * - feeding
+  dAedt <- feeding * - birthing
+  
+  
+  
+    
+   return(list(c(dGdt, 
+                 dLqdt,dLfidt, dLfsdt, dLeidt,dLesdt,
+                 dNqidt, dNqsdt, dNfidt, dNfsdt,dNedt,
+                 dAqdt, dAfdt, dAedt))) 
+
+}
+
+G <- 
+  Lq <-
+  Lfi <-
+  Lfs <-
+  Lei <-
+  Les <-
+  
+  Nqi <-
+  Nqs <-
+  Nfi <-
+  Nfs <-x[10]
+  Ne <-x[11]
+  
+  Aq <-x[12]
+  Af <-x[13]
+  Ae <-x[14]
+```
+
+```{r}
+
+# my more complex model to incorporate more life stages to accommodate for VT
+
+tick_lifestage <- function(t, x, params) {
+  Gv <- x[1]
+  Gu <-x[2]
+  Lqi <-x[3]
+  Lqs <-x[4]
+  Lfi <-x[5]
+  Lfs <-x[6]
+  Lei <-x[7]
+  Les <-x[8]
+  Nqi <-x[9]
+  Nqs <-x[10]
+  Nfi <-x[11]
+  Nfs <-x[12]
+  Nei <-x[13]
+  Nes <-x[14]
+  Aqi <-x[15]
+  Aqs <-x[16]
+  Afi <-x[17]
+  Afs <-x[18]
+  
+  hatching = params[1]
+  attacking = params[2]
+  feeding = params[3]
+  molting = params[4]
+  birthing = params[5]
+  
+  dGvdt <- birthing - hatching - hatching
+  dGudt <- birthing + birthing - hatching
+  
+  
+  dLqidt <- hatching - attacking
+  dLqsdt <- hatching + hatching - attacking
+  
+  dLfidt <- attacking + attacking - feeding
+  dLfsdt <- attacking - feeding
+  
+  dLeidt <- feeding - molting
+  dLesdt <- feeding - molting
+  
+  
+  dNqidt <- molting - attacking
+  dNqsdt <- molting - attacking - attacking
+  
+  dNfidt <- attacking + attacking - feeding
+  dNfsdt <- attacking - feeding
+  
+  dNeidt <- feeding - molting
+  dNesdt <- feeding - molting
+  
+  
+  dAqidt <- molting - attacking
+  dAqsdt <- molting - attacking - attacking
+  
+  dAfidt <- attacking + attacking - birthing - birthing
+  dAfsdt <- attacking - birthing
+    
+   return(list(c(dGvdt,dGudt, 
+                 dLqidt,dLqsdt, dLfidt,dLfsdt,dLeidt,dLesdt,
+                  dNqidt,dNqsdt, dNfidt,dNfsdt,dNeidt,dNesdt,
+                 dAqidt, dAqsdt,dAfidt, dAfsdt))) 
+
+
 }
 ```
 
