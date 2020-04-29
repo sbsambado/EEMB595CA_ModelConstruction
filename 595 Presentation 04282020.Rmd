@@ -1,0 +1,373 @@
+---
+title: "595 Presentation 4.28"
+author: "sbsambado"
+date: "4/28/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r host tick interaction, part 1}
+# very basic, simple model to build off of
+
+library(deSolve)
+
+host.tick <- function(t, x, params) {
+  S = x[1] # susceptible host
+  I = x[2] # infected host
+  U = x[3] # susceptible vector
+  V = x[4] # infected vector
+  
+  beta_prime = params[1] # inoculation
+  alpha = params[2] # acquisition
+  gamma = params[3] # host turnover I > S
+  birth_v = params[4] # birth of vectors, or input into the system
+  death_v = params[5] # death of vectors
+  
+  # S + I = N host in system
+  dSdt = - (beta_prime*S*V)/(S + I) + gamma*I #change of susceptibles to infected
+  dIdt = (beta_prime*S*V)/(S + I) - gamma*I # change of infected to susceptibles
+  dUdt = - (alpha*S*I)/(S + I) + birth_v*U - death_v*U 
+  dVdt = (alpha*S*I)/(S + I) + birth_v*V - death_v*V
+ 
+  # U + V = N vector in system, don't think this would be biologically driving I% but check it out
+  #dUdt = - (alpha*U*I)/(U + V) + birth_v*U - death_v*U 
+  #dVdt = (alpha*U*I)/(U + V) + birth_v*V - death_v*V
+  
+  return(list(c(dSdt, dIdt, dUdt, dVdt)))
+}
+  
+S0 = 29
+I0 = 1
+U0 = 99
+V0 = 1
+
+initial_values = c(S0, I0, U0, V0)
+
+  beta_prime = 0.9 # inoculation
+  alpha = 0.8  # acquisition
+  gamma = 0.7 # host turnover I > S
+  birth_v = 0.2 # birth of vectors
+  death_v = 0.5 # death of vectors
+
+parameters = c(beta_prime, alpha, gamma, birth_v, death_v) 
+
+times = seq(0,30, 0.01)
+
+results = lsoda(initial_values, times, host.tick, parameters)
+colnames(results) = c('time', 'susceptible host', 'infected host', 'susceptible tick', 'infected tick')
+head(results)  
+
+plot(results[, 'time'], results[,'susceptible host'], type = 'l', col = 'blue', 
+     xlab = 'time', ylab = 'abundance', ylim = c(0,101), lty = 1, lwd = 1)
+lines(results[,'time'], results[,'infected host'], type = 'l', col = 'blue', lty = 2, lwd = 2)
+lines(results[,'time'], results[,'susceptible tick'], type = 'l', col = 'red', lty = 1, lwd = 1)
+lines(results[,'time'], results[,'infected tick'], type = 'l', col = 'red', lty = 2, lwd = 2)
+legend('topright', legend = c('Susceptible hosts', 'Infected host', 'Susceptible vectors', 'Infected vectors'),
+       col = c('blue', 'blue', 'red', 'red'), lty = c(1,2,1,2), 
+       lwd = c(1,2,1,2), cex = 0.9)
+
+# hopefully if I can get psi (input into susceptible vectors) there won't be a crashing Vs population
+```
+
+```{r tick life stage transition from questing to feeding, part 2}
+q.to.f <- function(t, x, params) {
+  Xqii = x[1] # infected stays infected
+  Xqsi = x[2] # susceptible becomes infected
+  Xqss = x[3] # susceptible stays susceptible
+  
+  
+  lambda= params[1] # inoculation
+  alpha = params[2] # acquisition via infected blood meal
+  sigma = params[3] # acquisition via cofeeding
+  psi = params[4] # input of new vectors into questing X
+  omega = params[5] # death of vectors
+  
+  # S + I = N host in system
+  dXqiidt = psi - omega*Xqii - lambda*Xqii # infected stays infected
+  dXqsidt = psi - omega*Xqsi - lambda*Xqsi*alpha - lambda*Xqsi*sigma # susceptible becomes infected
+  # if sigma/alpha 0, selects 1 route of transmission
+  dXqssdt = psi - omega*Xqss - lambda*Xqss # susceptible stays susceptible
+  
+  return(list(c(dXqiidt, dXqsidt, dXqssdt)))
+}
+
+Xqii0 = 10
+Xqsi0 = 30
+Xqss0 = 60
+
+## set values
+# state variables
+initial_values = c(Xqii0, Xqsi0, Xqss0)
+
+# parameters
+  lambda= .5 # contact rate
+  alpha = .3 # acquisition via infected blood meal
+  sigma = .1 # acquisition via cofeeding
+  psi = 50 # input of new vectors into questing X
+  omega = .5 # death of vectors
+
+parameters = c(lambda, alpha, sigma, psi, omega) 
+
+times = seq(0,30, 0.01)
+
+results = lsoda(initial_values, times, q.to.f, parameters)
+colnames(results) = c('time', 'I to I', 'S to I', 'S to S')
+head(results)  
+
+plot(results[, 'time'], results[,'I to I'], type = 'l', col = 'blue', 
+     xlab = 'time', ylab = 'abundance', ylim = c(0,100), lty = 1, lwd = 2)
+lines(results[,'time'], results[,'S to I'], type = 'l', col = 'purple', lty = 1, lwd = 2)
+lines(results[,'time'], results[,'S to S'], type = 'l', col = 'red', lty = 1, lwd = 2)
+legend('bottomright', legend = c('I to I', 'S to I', 'S to S'),
+       col = c('blue', 'purple', 'red'), lty = c(1,1,1), 
+       lwd = c(2,2,2), cex = 0.9)
+```
+
+```{r all phase transitions within one tick lifes stage , part 3}
+all.phases <- function(t, x, params) {
+  # 3 classes from questing to feeding
+  Xqi = x[1] # infected stays infected
+  Xqs.a = x[2] # susceptible becomes infected
+  Xqs.b = x[3] # susceptible stays susceptible
+  # 2 classes from feeding to engorged
+  Xfi = x[4]
+  Xfs = x[5]
+  # 2 classes from engorged to molted
+  Xei = x[6]
+  Xes = x[7]
+    
+  lambda = params[1] # inoculation
+  alpha = params[2] # acquisition via infected blood meal
+  sigma = params[3] # acquisition via cofeeding
+  psi = params[4] # input of new vectors into questing X
+  omega = params[5] # death of vectors
+  phi = params[6] # dropping off rate
+  tau = params[7] # molting rate
+  
+  # S + I = N host in system
+  
+  # questing to feeding
+  dXqidt = psi - omega*Xqi - lambda*Xqi # infected stays infected
+  
+  # this line needs help, 
+  #which do I assign death to? Do I combine both routes for si here?
+  dXqs.adt = psi - omega*Xqs.a - lambda*Xqs.a*alpha - omega*Xqs.a -lambda*Xqs.a*sigma # susceptible becomes infected
+  # if sigma/alpha 0, selects 1 route of transmission
+  
+  
+  dXqs.bdt = psi - omega*Xqs.b - lambda*Xqs.b # susceptible stays susceptible
+  
+  # feeding to engorged
+  dXfidt = lambda*Xqi + lambda*Xqs.a*alpha + lambda*Xqs.a*sigma - omega*Xfi - phi*Xfi
+  dXfsdt = lambda*Xqs.b - omega*Xfs - phi*Xfs
+  
+  # engorged to molted to next X
+  dXeidt = phi*Xfi - omega*Xei - tau*Xei
+  dXesdt = phi*Xfs - omega*Xes - tau*Xes
+  
+  return(list(c(dXqidt, dXqs.adt, dXqs.bdt, dXfidt,dXfsdt,dXeidt,dXesdt)))
+}
+
+Xqi0 = 1
+Xqs.a0 = 3
+Xqs.b0 = 6
+
+Xfidt0 = 4
+Xfsdt0 = 6
+
+Xeidt0 = 4
+Xesdt0 = 6
+
+## set values
+# state variables
+initial_values = c(Xqi0, Xqs.a0, Xqs.b0,
+                   Xfidt0,Xfsdt0,
+                   Xeidt0,Xesdt0)
+
+# parameters
+  lambda= .5 # contact rate
+  alpha = .3 # acquisition via infected blood meal
+  sigma = .1 # acquisition via cofeeding
+  psi = 50 # input of new vectors into questing X
+  omega = .5 # death of vectors
+  phi = .5
+  tau = .6
+parameters = c(lambda, alpha, sigma, psi, omega, phi, tau) 
+
+times = seq(0,30, 0.01)
+
+results = lsoda(initial_values, times, all.phases, parameters)
+colnames(results) = c('time', 'Xqi', 'Xqs.a', 'Xqs.b','Xfi','Xfs','Xei','Xes')
+head(results)  
+
+plot(results[, 'time'], results[,'Xqi'], type = 'l', col = 'bisque1', 
+     xlab = 'time', ylab = 'abundance', ylim = c(0,60), lty = 1, lwd = 2)
+lines(results[,'time'], results[,'Xqs.a'], type = 'l', col = 'bisque2', lty = 1, lwd = 2)
+lines(results[,'time'], results[,'Xqs.b'], type = 'l', col = 'bisque3', lty = 2, lwd = 1)
+lines(results[,'time'], results[,'Xfi'], type = 'l', col = 'aquamarine1', lty = 1, lwd = 2)
+lines(results[,'time'], results[,'Xfs'], type = 'l', col = 'aquamarine2', lty = 2, lwd = 1)
+lines(results[,'time'], results[,'Xei'], type = 'l', col = 'lightgray', lty = 1, lwd = 2)
+lines(results[,'time'], results[,'Xes'], type = 'l', col = 'gray', lty = 2, lwd = 1)
+legend('topright', legend = c('Xqi', 'Xqs.a', 'Xqs.b','Xfi','Xfs','Xei','Xes'),
+       col = c('bisque1', 'bisque2', 'bisque3', 'aquamarine1', 'aquamarine2', 'lightgray', 'gray'), lty = c(1,1,2,1,2,1), 
+       lwd = c(2,2,1,2,1,2,1), cex = 0.7, horiz = TRUE)
+```
+
+
+```{r state variables; need to fix these values}
+# types of competent and non-competent hosts, need to figure out this bit
+S = 10
+I = 1
+H = S + I
+# H1 = 
+# H2 =
+# H3 =
+# H_types = H1 + H2 + H3
+
+# susceptible hosts
+H_s1 = 5 # highly competent # NEFU
+H_s2 = 7 # lowly comptenty  # PERO
+H_s3 = 9 # not competent    # SCOC
+S = H_s1 + H_s2 +H_s3
+
+# infected hosts  
+H_i1 = 4 # highly competent # NEFU
+H_i2 = 0 # lowly comptenty  # PERO
+H_i3 = 0 #not competent    # SCOC # this is a weird one
+I = H_i1 + H_i2 +H_i3 
+
+
+# susceptible ticks
+Ls = 12
+Ns = 8
+As = 2
+Vs = Ls + Ns + As
+
+# infected ticks
+Li = 1
+Ni = 0
+Ai = 0
+Vi = Li + Ni + Ai
+
+# tick life stages
+X = Vs + Vi
+L = 10
+N = 8
+A = 2
+X_ls = L + N + A
+
+# infected questing ticks 
+Lqi = 1
+Nqi = 11
+Aqi = 9
+q = Lqi + Nqi + Aqi 
+
+```
+
+```{r parameters, need to fix these values}
+# tick natural mortality
+
+wl = .1
+wn = .2
+wa = .2
+w = wl + wn + wa
+
+# host recovery rate 
+gamma = .9
+
+# tick input to each life stage
+psi = X_ls*w # need to figure this out
+
+ 
+# contact rate between tick and host
+beta_l = .05
+beta_n = .03
+beta_a = .01
+beta_x = beta_l + beta_n + beta_a
+
+# tick acquisition rate of pathogen ( host to tick )
+alpha = (I * beta_x * q)/H
+
+# I want to divie this up into contact between different types of competent hosts eventually
+# beta_l1 =
+#   beta_l2 =
+#   beta_l3 =
+# beta_n1 =
+#   beta_n2 =
+#   beta_n3 =
+# beta_a1 =
+#   beta_a2 =
+#   beta_a3 =
+  
+# infectious contact rate between tick and host
+beta = beta_x * q
+
+# host inoculation rate of patogen ( tick to host )
+beta_prime = (H * beta * X)/ H
+
+
+```
+
+```{r toy 2.0}
+toy2.0 <- function(t, x, params) {
+  S = x[1] # susceptible host
+  I = x[2] # infected host
+  U = x[3] # susceptible vector
+  V = x[4] # infected vector
+  
+  beta_prime = params[1] # inoculation
+  alpha = params[2] # acquisition
+  gamma = params[3] # host turnover I > S
+  birth_v = params[4] # birth of vectors, or input into the system
+  death_v = params[5] # death of vectors
+  
+  # S + I = N host in system
+  dSdt = - beta_prime + gamma*I #change of susceptibles to infected
+  dIdt = beta_prime - gamma*I # change of infected to susceptibles
+  dUdt = - alpha - death_v*Vs + psi # need to switch birth_v to psi
+  dVdt = alpha + birth_v*Vs - death_v*Vi # need to switch birth_v to psi
+ 
+  # U + V = N vector in system, don't think this would be biologically driving I% but check it out
+  #dUdt = - (alpha*U*I)/(U + V) + birth_v*U - death_v*U 
+  #dVdt = (alpha*U*I)/(U + V) + birth_v*V - death_v*V
+  
+  return(list(c(dSdt, dIdt, dUdt, dVdt)))
+  
+
+}
+  
+S0 = 19
+I0 = 1
+U0 = 99
+V0 = 1
+
+initial_values = c(S0, I0, U0, V0)
+
+
+  # beta_prime = 0.9 # inoculation
+  # alpha = 0.8  # acquisition
+  # gamma = 0.7 # host turnover I > S
+  # birth_v = 0.2 # birth of vectors
+  # death_v = 0.5 # death of vectors
+
+parameters = c(beta_prime, alpha, gamma, birth_v, death_v) 
+
+times = seq(0,30, 0.01)
+
+results = lsoda(initial_values, times, toy2.0, parameters)
+colnames(results) = c('time', 'susceptible host', 'infected host', 'susceptible tick', 'infected tick')
+head(results)  
+
+plot(results[, 'time'], results[,'susceptible host'], type = 'l', col = 'blue', 
+     xlab = 'time', ylab = 'abundance', ylim = c(0,101), lty = 1, lwd = 1)
+lines(results[,'time'], results[,'infected host'], type = 'l', col = 'blue', lty = 2, lwd = 2)
+lines(results[,'time'], results[,'susceptible tick'], type = 'l', col = 'red', lty = 1, lwd = 1)
+lines(results[,'time'], results[,'infected tick'], type = 'l', col = 'red', lty = 2, lwd = 2)
+legend('bottomright', legend = c('Susceptible hosts', 'Infected host', 'Susceptible vectors', 'Infected vectors'),
+       col = c('blue', 'blue', 'red', 'red'),lty = c(1,2,1,2), cex = 0.9,
+       lwd = c(1,2,1,2))
+```
+
