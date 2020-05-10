@@ -132,6 +132,7 @@ all.phases <- function(t, x, params) {
   Xqi = x[1] # infected stays infected
   Xqs.a = x[2] # susceptible becomes infected
   Xqs.b = x[3] # susceptible stays susceptible
+  
   # 2 classes from feeding to engorged
   Xfi = x[4]
   Xfs = x[5]
@@ -157,7 +158,6 @@ all.phases <- function(t, x, params) {
   dXqs.adt = psi - omega*Xqs.a - lambda*Xqs.a*alpha - omega*Xqs.a -lambda*Xqs.a*sigma # susceptible becomes infected
   # if sigma/alpha 0, selects 1 route of transmission
   
-  
   dXqs.bdt = psi - omega*Xqs.b - lambda*Xqs.b # susceptible stays susceptible
   
   # feeding to engorged
@@ -167,6 +167,155 @@ all.phases <- function(t, x, params) {
   # engorged to molted to next X
   dXeidt = phi*Xfi - omega*Xei - tau*Xei
   dXesdt = phi*Xfs - omega*Xes - tau*Xes
+  
+  return(list(c(dXqidt, dXqs.adt, dXqs.bdt, dXfidt,dXfsdt,dXeidt,dXesdt)))
+}
+
+Xqi0 = 1
+Xqs.a0 = 3
+Xqs.b0 = 6
+
+Xfidt0 = 4
+Xfsdt0 = 6
+
+Xeidt0 = 4
+Xesdt0 = 6
+
+## set values
+# state variables
+initial_values = c(Xqi0, Xqs.a0, Xqs.b0,
+                   Xfidt0,Xfsdt0,
+                   Xeidt0,Xesdt0)
+
+# parameters
+  lambda= .5 # contact rate
+  alpha = .3 # acquisition via infected blood meal
+  sigma = .1 # acquisition via cofeeding
+  psi = 50 # input of new vectors into questing X
+  omega = .5 # death of vectors
+  phi = .5
+  tau = .6
+parameters = c(lambda, alpha, sigma, psi, omega, phi, tau) 
+
+times = seq(0,30, 0.01)
+
+results = lsoda(initial_values, times, all.phases, parameters)
+colnames(results) = c('time', 'Xqi', 'Xqs.a', 'Xqs.b','Xfi','Xfs','Xei','Xes')
+head(results)  
+
+plot(results[, 'time'], results[,'Xqi'], type = 'l', col = 'bisque1', 
+     xlab = 'time', ylab = 'abundance', ylim = c(0,60), lty = 1, lwd = 2)
+lines(results[,'time'], results[,'Xqs.a'], type = 'l', col = 'bisque2', lty = 1, lwd = 2)
+lines(results[,'time'], results[,'Xqs.b'], type = 'l', col = 'bisque3', lty = 2, lwd = 1)
+lines(results[,'time'], results[,'Xfi'], type = 'l', col = 'aquamarine1', lty = 1, lwd = 2)
+lines(results[,'time'], results[,'Xfs'], type = 'l', col = 'aquamarine2', lty = 2, lwd = 1)
+lines(results[,'time'], results[,'Xei'], type = 'l', col = 'lightgray', lty = 1, lwd = 2)
+lines(results[,'time'], results[,'Xes'], type = 'l', col = 'gray', lty = 2, lwd = 1)
+legend('topright', legend = c('Xqi', 'Xqs.a', 'Xqs.b','Xfi','Xfs','Xei','Xes'),
+       col = c('bisque1', 'bisque2', 'bisque3', 'aquamarine1', 'aquamarine2', 'lightgray', 'gray'), lty = c(1,1,2,1,2,1), 
+       lwd = c(2,2,1,2,1,2,1), cex = 0.7, horiz = TRUE)
+```
+```{r add eggs}
+eggstoadults <- function(t, x, params) {
+  
+  # LARVAE
+  # 3 classes from questing to feeding
+  Lqi = x[1] # infected stays infected
+  Lqs.a = x[2] # susceptible becomes infected
+  Lqs.b = x[3] # susceptible stays susceptible
+  
+  # 2 classes from feeding to engorged
+  Lfi = x[4]
+  Lfs = x[5]
+  # 2 classes from engorged to molted
+  Lei = x[6]
+  Les = x[7]
+  
+  #NYMPHS
+  Nqi = x[8] # infected stays infected
+  Nqs.a = x[9] # susceptible becomes infected
+  Nqs.b = x[10] # susceptible stays susceptible
+  
+  # 2 classes from feeding to engorged
+  Nfi = x[11]
+  Nfs = x[12]
+  # 2 classes from engorged to molted
+  Nei = x[13]
+  Nes = x[14]
+  
+  
+  #ADULTS
+  Aqi = x[15] # infected stays infected
+  Aqs.a = x[16] # susceptible becomes infected
+  Aqs.b = x[17] # susceptible stays susceptible
+  
+  # 2 classes from feeding to engorged
+  Afi = x[18]
+  Afs = x[19]
+  
+  
+  # eggs
+  Gv = x[20]
+  Gu = x[21]
+    
+  lambda = params[1] # inoculation
+  alpha = params[2] # acquisition via infected blood meal
+  sigma = params[3] # acquisition via cofeeding
+  psi = params[4] # input of new vectors into questing X
+  omega = params[5] # death of vectors
+  phi = params[6] # dropping off rate
+  tau = params[7] # molting rate
+  delta = params[8] # birth rate
+  tot = params[9] # total ovarial transmission (tot)
+  tot_prime = params[10] # no tot
+  rho = params[11] # filial infection prevalence (fip)
+  rho_prime = params[12] # no fip
+  kappa = params[13] # survival from egg to larva to next stage (need to make specific)
+  
+  # S + I = N host in system
+  
+  # questing to feeding
+  dLqidt = psi - omega*Lqi - lambda*Lqi + rho*Gv*kappa # infected stays infected
+  
+  # this line needs help, 
+  #which do I assign death to? Do I combine both routes for si here?
+  dLqs.adt = psi - omega*Lqs.a - lambda*Lqs.a*alpha - omega*Lqs.a -lambda*Xqs.a*sigma + rho_prime*Gv*kappa # susceptible becomes infected
+  # if sigma/alpha 0, selects 1 route of transmission
+  
+  dLqs.bdt = psi - omega*Lqs.b - lambda*Lqs.b + kappa*Gu + rho_prime*Gv*kappa # susceptible stays susceptible
+  
+  # feeding to engorged
+  dLfidt = lambda*Lqi + lambda*Lqs.a*alpha + lambda*Lqs.a*sigma - omega*Lfi - phi*Lfi
+  dLfsdt = lambda*Lqs.b - omega*Lfs - phi*Lfs
+  
+  # engorged to molted to next X
+  dLeidt = phi*Lfi - omega*Lei - tau*Lei
+  dLesdt = phi*Lfs - omega*Les - tau*Les
+  
+  ## NYMPHS
+  
+   # questing to feeding
+  dNqidt = - omega*Nqi - lambda*Nqi + tau*Lei # infected stays infected
+ 
+  
+  
+  ### STOPPED HERE NEED TO FIX
+   
+  # this line needs help, 
+  #which do I assign death to? Do I combine both routes for si here?
+  dLqs.adt = psi - omega*Lqs.a - lambda*Lqs.a*alpha - omega*Lqs.a -lambda*Xqs.a*sigma + rho_prime*Gv*kappa # susceptible becomes infected
+  # if sigma/alpha 0, selects 1 route of transmission
+  
+  dLqs.bdt = psi - omega*Lqs.b - lambda*Lqs.b + kappa*Gu + rho_prime*Gv*kappa # susceptible stays susceptible
+  
+  # feeding to engorged
+  dLfidt = lambda*Lqi + lambda*Lqs.a*alpha + lambda*Lqs.a*sigma - omega*Lfi - phi*Lfi
+  dLfsdt = lambda*Lqs.b - omega*Lfs - phi*Lfs
+  
+  # engorged to molted to next X
+  dLeidt = phi*Lfi - omega*Lei - tau*Lei
+  dLesdt = phi*Lfs - omega*Les - tau*Les
+  
   
   return(list(c(dXqidt, dXqs.adt, dXqs.bdt, dXfidt,dXfsdt,dXeidt,dXesdt)))
 }
