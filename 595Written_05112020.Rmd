@@ -1,5 +1,5 @@
 ---
-title: "595 Presentation 4.28"
+title: "595 Written Exam"
 author: "sbsambado"
 date: "4/28/2020"
 output: html_document
@@ -7,8 +7,10 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
 ```
 
+show during Bren meeting
 ```{r host tick interaction, part 1}
 # very basic, simple model to build off of
 
@@ -62,7 +64,7 @@ results = lsoda(initial_values, times, host.tick, parameters)
 colnames(results) = c('time', 'susceptible host', 'infected host', 'susceptible tick', 'infected tick')
 head(results)  
 
-colors()
+#colors()
 Scol <- 'blue'
 Icol <- 'red'
 Ucol <- 'darkolivegreen'
@@ -102,7 +104,7 @@ T = U0 + V0
 ## what proportion of population had been sick at some point?
 plot(x = times, y = ((results[,'infected tick'])/T),
      xlab = 'Time', ylab = 'Proportion of Infected Groups',
-     main = 'Proportion of infecteds',
+     main = 'Proportion of Infected Populations',
      lwd = 2, lty = 1, type = 'l',
      col = Vcol,
      ylim = c(0,1))
@@ -110,7 +112,7 @@ lines(x = times, y = ((results[,'infected host'])/H),
      col = Icol, lwd = 2)
 legend('topright', legend = c('Infected Tick', 'Infected Host'),
        col = c(Vcol, Icol), lty = 1, lwd = 2,
-       cex = 0.6)
+       cex = 0.8)
 
 ## When was rate of transmission highest?
 newinfections_host <- beta_prime*(results[,'susceptible host'])*(results[,'infected host'])
@@ -144,7 +146,157 @@ abline(v = H.maxnewinf, lty = 2, col = Icol)
 
 ```
 
-```{r for loop of host tick interaction model pt. 1}
+show during Bren meeting
+```{r NEEDS WORK change initial values for host.tick model}
+## Change initial conditions, like host density to see impact on R0
+# make forloop
+
+host.tick.density<- function(t, x, params) {
+  S = x[1]
+  I = x[2]
+  U = x[3]
+  V = x[4]
+  
+  beta_prime = params[1] # inoculation
+  alpha = params[2] # acquisition
+  gamma = params[3] # host turnover I > S
+  birth_v = params[4] # birth of vectors, or input into the system
+  death_v = params[5] # death of vectors
+  
+  # S + I = N host in system
+  dSdt = - (beta_prime*S*V) + gamma*I #change of susceptibles to infected
+  dIdt = (beta_prime*S*V) - gamma*I # change of infected to susceptibles
+  dUdt = - (alpha*S*I) + birth_v*U - death_v*U 
+  dVdt = (alpha*S*I) + birth_v*V - death_v*V
+ 
+  return(list(c(dSdt, dIdt, dUdt, dVdt)))
+}
+
+Tend = 100
+times = seq(0, Tend, by = 1)
+
+# initial values for parameters
+  beta_prime = 0.1 # inoculation 
+  alpha = 0.1  # acquisition 
+  gamma = 1 # host turnover I > S
+  birth_v = 0.6 # birth of vectors
+  death_v = 0.5 # death of vectors
+parameters = c(beta_prime, alpha, gamma, birth_v, death_v) 
+
+# initial values for state variables
+  #S0 = 19 changing this
+  S0_all <-seq(1,50,1) 
+  I0 = 1
+  U0 = 200
+  V0 = 1
+
+
+S_longterm = rep(0, length(S0_all))
+I_longterm = rep(0, length(S0_all))
+U_longterm = rep(0, length(S0_all))
+V_longterm = rep(0, length(S0_all))
+
+for(i in length(S0_all)) {
+  initial_values = c(S0_all[i], I0, U0, V0)
+  
+  results = lsoda(initial_values, times, host.tick.density, parameters)
+  
+  # save final values of state variables
+  S_longterm[i] = results[Tend+1,2]
+  I_longterm[i] = results[Tend+1,3]
+  U_longterm[i] = results[Tend+1,4]
+  V_longterm[i] = results[Tend+1,5]
+}
+
+plot(S0_all, S_longterm, type = 'l',
+     xlab = 'Initial density of Susceptible hosts,S(0)',
+     ylab = 'Density of Susceptibles Remaining',
+     main = 'Change initial density of S0',
+     ylim = c(0, 100))
+lines(S0_all, S0_all, type = 'l', col = Scol,lty = 2) # 1:1 line; final density of S = S0
+abline(v = gamma/beta_prime, col = 'red') # threshold density of S for pathogen invasion
+legend("topright", legend = c('1:1 line','S0', 'Threshold Density'),
+       col = c('blue', 'black', 'red'), lty = c(2,1,1))
+
+```
+```{r change initial values of beta prime NEED TO FIX}
+## Change initial conditions, like beta_prime to see impact on R0
+# make forloop
+
+host.tick.density<- function(t, x, params) {
+  S = x[1]
+  I = x[2]
+  U = x[3]
+  V = x[4]
+  
+  beta_prime = params[1] # inoculation
+  alpha = params[2] # acquisition
+  gamma = params[3] # host turnover I > S
+  birth_v = params[4] # birth of vectors, or input into the system
+  death_v = params[5] # death of vectors
+  
+  # S + I = N host in system
+  dSdt = - (beta_prime*S*V) + gamma*I #change of susceptibles to infected
+  dIdt = (beta_prime*S*V) - gamma*I # change of infected to susceptibles
+  dUdt = - (alpha*S*I) + birth_v*U - death_v*U 
+  dVdt = (alpha*S*I) + birth_v*V - death_v*V
+ 
+  return(list(c(dSdt, dIdt, dUdt, dVdt, beta_prime)))
+}
+
+Tend = 100
+times = seq(0, Tend, by = 1)
+
+# initial values for parameters
+  beta_prime_all <- seq(.001, .999, .01)
+  #beta_prime = 0.1 # inoculation 
+  alpha = 0.1  # acquisition 
+  gamma = 1 # host turnover I > S
+  birth_v = 0.6 # birth of vectors
+  death_v = 0.5 # death of vectors
+parameters = c(beta_prime, alpha, gamma, birth_v, death_v) 
+
+# initial values for state variables
+  S0 = 19 
+  #S0_all <-seq(1,50,1) 
+  I0 = 1
+  U0 = 200
+  V0 = 1
+
+z = 1:100
+S_longterm = rep(0, length(z))
+I_longterm = rep(0, length(z))
+U_longterm = rep(0, length(z))
+V_longterm = rep(0, length(z))
+
+for(i in length(z)) {
+
+  parameters = c(beta_prime_all[i], alpha, gamma, birth_v, death_v) 
+
+  results = lsoda(initial_values, times, host.tick.density, parameters)
+  
+  # save final values of state variables
+  S_longterm[i] = results[Tend+1,2]
+  I_longterm[i] = results[Tend+1,3]
+  U_longterm[i] = results[Tend+1,4]
+  V_longterm[i] = results[Tend+1,5]
+  beta_prime_longterm[i] = results[Tend+1,6]
+}
+
+plot(beta_prime_all,beta_prime_longterm, type = 'l' )
+plot(S0_all, S_longterm, type = 'l',
+     xlab = 'Initial density of Susceptible hosts,S(0)',
+     ylab = 'Density of Susceptibles Remaining',
+     main = 'Change initial density of S0',
+     ylim = c(0, 250))
+lines(S0_all, S0_all, type = 'l', col = Scol,lty = 2) # 1:1 line; final density of S = S0
+abline(v = gamma/beta_prime, col = 'red') # threshold density of S for pathogen invasion
+legend("topright", legend = c('1:1 line','S0', 'Threshold Density'),
+       col = c('blue', 'black', 'red'), lty = c(2,1,1))
+
+```
+
+```{r for loop of host tick interaction model pt. 1 NEED TO FIX}
 
 ## need to fix my ODEs here
 
@@ -200,7 +352,8 @@ for(i in 2:length(tset)) {
 
 ```
 
-```{r tick life stage transition from questing to feeding, part 2}
+show during Bren meeting?
+```{r host tick interactions part 2, how to transfer from questing to feeding}
 q.to.f <- function(t, x, params) {
   Xqii = x[1] # infected stays infected
   Xqsi = x[2] # susceptible becomes infected
@@ -230,31 +383,211 @@ Xqss0 = 60
 # state variables
 initial_values = c(Xqii0, Xqsi0, Xqss0)
 
+## all transmission routes are equal
 # parameters
-  lambda= .5 # contact rate
-  alpha = .3 # acquisition via infected blood meal
-  sigma = .1 # acquisition via cofeeding
+  lambda= .7 # contact rate
+  alpha_equal = .01 # acquisition via infected blood meal
+  sigma_equal = .01 # acquisition via cofeeding
   psi = 50 # input of new vectors into questing X
   omega = .5 # death of vectors
 
-parameters = c(lambda, alpha, sigma, psi, omega) 
+parameters_equal = c(lambda, alpha_equal, sigma_equal, psi, omega) 
 
-times = seq(0,30, 0.01)
+times = seq(0,10, 0.01)
 
-results = lsoda(initial_values, times, q.to.f, parameters)
-colnames(results) = c('time', 'I to I', 'S to I', 'S to S')
-head(results)  
+results_equal = lsoda(initial_values, times, q.to.f, parameters_equal)
+colnames(results_equal) = c('time', 'I to I', 'S to I', 'S to S')
+head(results_equal)  
 
-plot(results[, 'time'], results[,'I to I'], type = 'l', col = 'blue', 
-     xlab = 'time', ylab = 'abundance', ylim = c(0,100), lty = 1, lwd = 2)
-lines(results[,'time'], results[,'S to I'], type = 'l', col = 'purple', lty = 1, lwd = 2)
-lines(results[,'time'], results[,'S to S'], type = 'l', col = 'red', lty = 1, lwd = 2)
+## HT greater >>
+# parameters
+  lambda= .7 # contact rate
+  alpha_greater = .7 # acquisition via infected blood meal
+  sigma_equal = .01 # acquisition via cofeeding
+  psi = 50 # input of new vectors into questing X
+  omega = .5 # death of vectors
+
+parameters_HT = c(lambda, alpha_greater, sigma_equal, psi, omega) 
+
+times = seq(0,10, 0.01)
+
+results_HT = lsoda(initial_values, times, q.to.f, parameters_HT)
+colnames(results_HT) = c('time', 'I to I', 'S to I', 'S to S')
+head(results_HT)  
+
+## co-feeding greater
+# parameters
+  lambda= .7 # contact rate
+  alpha_small = .1 # acquisition via infected blood meal
+  sigma_greater = .4 # acquisition via cofeeding
+  psi = 50 # input of new vectors into questing X
+  omega = .5 # death of vectors
+
+parameters_CF = c(lambda, alpha_small, sigma_greater, psi, omega) 
+
+times = seq(0,10, 0.01)
+
+results_CF = lsoda(initial_values, times, q.to.f, parameters_CF)
+colnames(results_CF) = c('time', 'I to I', 'S to I', 'S to S')
+head(results_CF)  
+
+
+qiicol <-"blue"
+qsicol<- 'red'
+qsscol <- 'purple'
+
+par(mfrow = c(3,1))
+# equal
+plot(results_equal[, 'time'], results_equal[,'I to I'], type = 'l', col = qiicol, 
+     xlab = 'time', ylab = 'abundance', main = 'Transitions from Questing to Feeding, siga = alpha',
+     ylim = c(0,100), lty = 1, lwd = 2)
+lines(results_equal[,'time'], results_equal[,'S to I'], type = 'l', col = qsicol, lty = 1, lwd = 2)
+lines(results_equal[,'time'], results_equal[,'S to S'], type = 'l', col = qsscol, lty = 1, lwd = 2)
 legend('bottomright', legend = c('I to I', 'S to I', 'S to S'),
        col = c('blue', 'purple', 'red'), lty = c(1,1,1), 
-       lwd = c(2,2,2), cex = 0.9)
+       lwd = c(2,2,2), cex = 0.6)
+
+# greater HT
+plot(results_HT[, 'time'], results_HT[,'I to I'], type = 'l', col = qiicol, 
+     xlab = 'time', ylab = 'abundance', main = 'Transitions from Questing to Feeding, alpha >> sigma',
+     ylim = c(0,100), lty = 1, lwd = 2)
+lines(results_HT[,'time'], results_HT[,'S to I'], type = 'l', col = qsicol, lty = 1, lwd = 2)
+lines(results_HT[,'time'], results_HT[,'S to S'], type = 'l', col = qsscol, lty = 1, lwd = 2)
+legend('bottomright', legend = c('I to I', 'S to I', 'S to S'),
+       col = c('blue', 'purple', 'red'), lty = c(1,1,1), 
+       lwd = c(2,2,2), cex = 0.6)
+
+# greater CF
+plot(results_CF[, 'time'], results_CF[,'I to I'], type = 'l', col = qiicol, 
+     xlab = 'time', ylab = 'abundance', main = 'Transitions from Questing to Feeding, sigma > alpha',
+     ylim = c(0,100), lty = 1, lwd = 2)
+lines(results_CF[,'time'], results_CF[,'S to I'], type = 'l', col = qsicol, lty = 1, lwd = 2)
+lines(results_CF[,'time'], results_CF[,'S to S'], type = 'l', col = qsscol, lty = 1, lwd = 2)
+legend('bottomright', legend = c('I to I', 'S to I', 'S to S'),
+       col = c('blue', 'purple', 'red'), lty = c(1,1,1), 
+       lwd = c(2,2,2), cex = 0.6)
+
+```
+show during Bren meeting?
+```{r tick phase model, playing around with temp sensitive parameters}
+all.phases <- function(t, x, params) {
+  # 3 classes from questing to feeding
+  Xq = x[1] # infected stays infected
+  Xf = x[2]
+  Xe = x[3]
+  
+  lambda = params[1]
+  phi = params[2]
+  tau = params[3]
+  
+  psi = params[4]
+  omega = params[5]
+  
+  # S + I = N host in system
+  
+  # questing to feeding
+  dXqdt = psi - omega*Xq - lambda*Xq # infected stays infected
+  
+  
+  # feeding to engorged
+  dXfdt = lambda*Xq - omega*Xf - phi*Xf
+  
+  
+  # engorged to molted to next X
+  dXedt = phi*Xf - omega*Xe - tau*Xe
+
+  
+  return(list(c(dXqdt,dXfdt,dXedt)))
+}
+
+Xq0 = 100
+Xf0 = 60
+Xe0 = 50
+
+## set values
+# state variables
+initial_values = c(Xq0,Xf0,Xe0)
+
+# parameters_equal
+lambda = .5 # contact rate
+  phi = .5 # drop off rate
+  tau = .5 # molting rate
+  
+  psi = 10 # input of new vectors into questing X
+  omega = .5 # death of vectors
+  
+parameters_equal = c(lambda, phi, tau, psi, omega) 
+
+times = seq(0,5, 0.1)
+
+results_equal = lsoda(initial_values, times, all.phases, parameters_equal)
+colnames(results_equal) = c('time', 'Xq','Xf','Xe')
+head(results_equal)  
+
+# greater parameters
+lambda_greater = .8 # contact rate
+  phi_greater = .8 # drop off rate
+  tau_greater = .8 # molting rate
+  
+  psi = 10 # input of new vectors into questing X
+  omega = .5 # death of vectors
+  
+parameters_greater = c(lambda_greater, phi_greater, tau_greater, psi, omega) 
+
+times = seq(0,5, 0.1)
+
+results_greater = lsoda(initial_values, times, all.phases, parameters_greater)
+colnames(results_greater) = c('time', 'Xq','Xf','Xe')
+head(results_greater)  
+
+# lower parameters
+lambda_lower = .3 # contact rate
+  phi_lower = .3 # drop off rate
+  tau_lower = .3 # molting rate
+  
+  psi = 10 # input of new vectors into questing X
+  omega = .5 # death of vectors
+  
+parameters_lower = c(lambda_lower, phi_lower, tau_lower, psi, omega) 
+
+times = seq(0,5, 0.1)
+
+results_lower = lsoda(initial_values, times, all.phases, parameters_lower)
+colnames(results_lower) = c('time', 'Xq','Xf','Xe')
+head(results_lower)  
+
+par(mfrow = c(3,1))
+plot(results_equal[, 'time'], results_equal[,'Xq'], type = 'l', col = 'red', 
+     xlab = 'Time', ylab = 'Abundance',main = 'Tick population dynamics, temp. parameters base level',
+     ylim = c(0,100), lty = 1, lwd = 2)
+lines(results_equal[,'time'], results_equal[,'Xf'], type = 'l', col = 'green', lty = 1, lwd = 2)
+lines(results_equal[,'time'], results_equal[,'Xe'], type = 'l', col = 'blue', lty = 1, lwd = 2)
+legend('topright', legend = c('questing','feeding','engorged'),
+       col = c('red', 'blue', 'green'), lty = c(1,1,1), 
+       lwd = c(2,2,2), cex = 0.7, horiz = TRUE)
+plot(results_lower[, 'time'], results_lower[,'Xq'], type = 'l', col = 'red', 
+     xlab = 'Time', ylab = 'Abundance',main = 'Tick population dynamics, temp. parameters decreased',
+     ylim = c(0,100), lty = 1, lwd = 2)
+lines(results_lower[,'time'], results_lower[,'Xf'], type = 'l', col = 'green', lty = 1, lwd = 2)
+lines(results_lower[,'time'], results_lower[,'Xe'], type = 'l', col = 'blue', lty = 1, lwd = 2)
+legend('topright', legend = c('questing','feeding','engorged'),
+       col = c('red', 'blue', 'green'), lty = c(1,1,1), 
+       lwd = c(2,2,2), cex = 0.7, horiz = TRUE)
+
+
+plot(results_greater[, 'time'], results_greater[,'Xq'], type = 'l', col = 'red', 
+     xlab = 'Time', ylab = 'Abundance',main = 'Tick population dynamics, temp parameters increased',
+     ylim = c(0,100), lty = 1, lwd = 2)
+lines(results_greater[,'time'], results_greater[,'Xf'], type = 'l', col = 'green', lty = 1, lwd = 2)
+lines(results_greater[,'time'], results_greater[,'Xe'], type = 'l', col = 'blue', lty = 1, lwd = 2)
+legend('topright', legend = c('questing','feeding','engorged'),
+       col = c('red', 'blue', 'green'), lty = c(1,1,1), 
+       lwd = c(2,2,2), cex = 0.7, horiz = TRUE)
+
+
 ```
 
-```{r all phase transitions within one tick lifes stage , part 3}
+```{r all phase transitions within one tick lifes stage LOL}
 all.phases <- function(t, x, params) {
   # 3 classes from questing to feeding
   Xqi = x[1] # infected stays infected
@@ -331,8 +664,10 @@ results = lsoda(initial_values, times, all.phases, parameters)
 colnames(results) = c('time', 'Xqi', 'Xqs.a', 'Xqs.b','Xfi','Xfs','Xei','Xes')
 head(results)  
 
+
 plot(results[, 'time'], results[,'Xqi'], type = 'l', col = 'bisque1', 
-     xlab = 'time', ylab = 'abundance', ylim = c(0,60), lty = 1, lwd = 2)
+     xlab = 'Time', ylab = 'Abundance',main = 'Tick population dynamics',
+     ylim = c(0,60), lty = 1, lwd = 2)
 lines(results[,'time'], results[,'Xqs.a'], type = 'l', col = 'bisque2', lty = 1, lwd = 2)
 lines(results[,'time'], results[,'Xqs.b'], type = 'l', col = 'bisque3', lty = 2, lwd = 1)
 lines(results[,'time'], results[,'Xfi'], type = 'l', col = 'aquamarine1', lty = 1, lwd = 2)
@@ -343,7 +678,8 @@ legend('topright', legend = c('Xqi', 'Xqs.a', 'Xqs.b','Xfi','Xfs','Xei','Xes'),
        col = c('bisque1', 'bisque2', 'bisque3', 'aquamarine1', 'aquamarine2', 'lightgray', 'gray'), lty = c(1,1,2,1,2,1), 
        lwd = c(2,2,1,2,1,2,1), cex = 0.7, horiz = TRUE)
 ```
-```{r add eggs}
+
+```{r add eggs LOL}
 eggstoadults <- function(t, x, params) {
   
   # LARVAE
@@ -518,7 +854,7 @@ initial_values = c(Lqv0,Lqu0,Lfi0,Lfs0,Lei0,Les0,
 parameters = c(kappa, rho, rho_prime, beta, phi,
                tau, delta, tot, tot_prime, B, q, gamma) 
 
-times = seq(0,30, 0.01)
+times = seq(0,50, 0.1)
 
 results = lsoda(initial_values, times, eggstoadults, parameters)
 colnames(results) = c('time', 'Lqv', 'Lqu', 'Lfi', 'Lfs', 'Lei', 'Les',
@@ -530,30 +866,40 @@ colnames(results) = c('time', 'Lqv', 'Lqu', 'Lfi', 'Lfs', 'Lei', 'Les',
 head(results)  
 #View(results)
 
-
-plot(results[, 'time'], results[,'Lqv'], type = 'l', col = 'blue', 
-     xlab = 'time', ylab = 'abundance', ylim = c(0,100), lty = 1, lwd = 1)
-lines(results[,'time'], results[,'Lqu'], type = 'l', col = 'blue', lty = 1, lwd = 2)
-lines(results[,'time'], results[,'Lfi'], type = 'l', col = 'blue', lty = 2, lwd = 3)
-lines(results[,'time'], results[,'Lfs'], type = 'l', col = 'blue', lty = 1, lwd = 4)
-lines(results[,'time'], results[,'Lei'], type = 'l', col = 'blue', lty = 2, lwd = 5)
-lines(results[,'time'], results[,'Les'], type = 'l', col = 'blue', lty = 1, lwd = 6)
-lines(results[,'time'], results[,'Nqi'], type = 'l', col = 'red', lty = 1, lwd = 2)
-lines(results[,'time'], results[,'Nqs'], type = 'l', col = 'red', lty = 1, lwd = 2)
-lines(results[,'time'], results[,'Nfi'], type = 'l', col = 'red', lty = 2, lwd = 1)
-lines(results[,'time'], results[,'Nfs'], type = 'l', col = 'red', lty = 1, lwd = 2)
-lines(results[,'time'], results[,'Nei'], type = 'l', col = 'red', lty = 2, lwd = 1)
-lines(results[,'time'], results[,'Nes'], type = 'l', col = 'red', lty = 1, lwd = 2)
+# plot infected
+plot(results[, 'time'], results[,'Lqv'], type = 'l', col = 'red', 
+     xlab = 'Time', ylab = 'Abundance', main = 'Infected Tick Life Stages',
+     ylim = c(0,50), xlim = c(0,15),
+     lty = 1, lwd = 2)
+lines(results[,'time'], results[,'Nqi'], type = 'l', col = 'blue', lty = 1, lwd = 2)
 lines(results[,'time'], results[,'Aqi'], type = 'l', col = 'green', lty = 1, lwd = 2)
-lines(results[,'time'], results[,'Aqs'], type = 'l', col = 'green', lty = 1, lwd = 2)
-lines(results[,'time'], results[,'Afi'], type = 'l', col = 'green', lty = 2, lwd = 1)
-lines(results[,'time'], results[,'Afs'], type = 'l', col = 'green', lty = 1, lwd = 2)
+
+
+
+# plot(results[, 'time'], results[,'Lqv'], type = 'l', col = 'black', 
+#      xlab = 'time', ylab = 'abundance', 
+#      main = 'crazyland',ylim = c(0,100), lty = 1, lwd = 1)
+# lines(results[,'time'], results[,'Lqu'], type = 'l', col = 'grey', lty = 1, lwd = 1)
+# lines(results[,'time'], results[,'Lfi'], type = 'l', col = 'lightblue1', lty = 2, lwd = 1)
+# lines(results[,'time'], results[,'Lfs'], type = 'l', col = 'lightblue2', lty = 1, lwd = 1)
+# lines(results[,'time'], results[,'Lei'], type = 'l', col = 'lightblue3', lty = 2, lwd = 1)
+# lines(results[,'time'], results[,'Les'], type = 'l', col = 'lightblue4', lty = 1, lwd = 1)
+# lines(results[,'time'], results[,'Nqi'], type = 'l', col = 'lightsalmon', lty = 1, lwd = 2)
+# lines(results[,'time'], results[,'Nqs'], type = 'l', col = 'lightsalmon1', lty = 1, lwd = 2)
+# lines(results[,'time'], results[,'Nfi'], type = 'l', col = 'lightsalmon2', lty = 2, lwd = 2)
+# lines(results[,'time'], results[,'Nfs'], type = 'l', col = 'lightsalmon3', lty = 1, lwd = 2)
+# lines(results[,'time'], results[,'Nei'], type = 'l', col = 'lightsalmon4', lty = 2, lwd = 2)
+# lines(results[,'time'], results[,'Nes'], type = 'l', col = 'lightpink', lty = 1, lwd = 2)
+# lines(results[,'time'], results[,'Aqi'], type = 'l', col = 'plum', lty = 1, lwd = 3)
+# lines(results[,'time'], results[,'Aqs'], type = 'l', col = 'plum1', lty = 1, lwd = 3)
+# lines(results[,'time'], results[,'Afi'], type = 'l', col = 'plum2', lty = 2, lwd = 3)
+# lines(results[,'time'], results[,'Afs'], type = 'l', col = 'plum3', lty = 1, lwd = 3)
 
 
 ```
 
 
-```{r state variables; need to fix these values}
+```{r state variables; NEED TO FIX}
 # types of competent and non-competent hosts, need to figure out this bit
 S = 10
 I = 1
@@ -603,7 +949,7 @@ q = Lqi + Nqi + Aqi
 
 ```
 
-```{r parameters, need to fix these values}
+```{r parameters, NEED TO FIX}
 # tick natural mortality
 
 wl = .1
@@ -650,7 +996,7 @@ beta_prime = (H * beta * X)/ H
 
 
 This is trash, fix or delete
-```{r toy 2.0}
+```{r toy model LOL trash}
 toy2.0 <- function(t, x, params) {
   S = x[1] # susceptible host
   I = x[2] # infected host
