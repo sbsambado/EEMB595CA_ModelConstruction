@@ -1,0 +1,791 @@
+---
+title: '642020'
+author: "sbsambado"
+date: "6/4/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r host model}
+library(deSolve)
+tset <- seq(0, 60, length.out = 1000)
+
+si.host.model <- function(t, x, params) {
+  S = x[1]
+  I = x[2]
+  
+  q = params[1] # prob tick infected
+  beta = params[2] # contact rate
+  gamma = params[3] # recovery
+  #L = params[3] # questing larva
+  #N = params[4] # questing nymph
+  
+  dSdt = gamma*I - q*beta*S*I
+  dIdt = q*beta*S*I - gamma*I
+  dNdt = dSdt + dIdt
+  
+  return(list(c(dSdt, dIdt, dNdt)))
+}
+
+
+I0 = 1
+N0 = 100
+S0 = N0 - I0
+
+initial_values = c(S = S0, I = I0, N = N0)
+
+q = 0.25
+beta = 0.1
+gamma = 0.3
+
+parameters = c(q,beta, gamma)
+
+times = seq(0, 60, length.out = 10000)
+
+results = lsoda(initial_values, times, si.host.model, parameters)
+head(results)
+
+Ncol = 'black'
+Scol = 'green'
+Icol = 'red'
+
+plot(x = results[,"time"], y = results[,"N"], 
+     type = 'l', col = Ncol, lwd =2,
+     xlab = 'time', ylab = 'Number of Individuals',
+     main = "ODE solver",
+     ylim = c(0, 110))
+lines(x = results[,'time'], y = results[,'S'], col = Scol, lwd = 2)
+lines(x = results[,'time'], y = results[,'I'], col = Icol, lwd = 2)
+
+```
+
+
+
+```{r full model}
+tick.host.model <- function(t, x, params) {
+  Lqi = x[1]
+  Lqu = x[2]
+  Nqi = x[3]
+  Nqu = x[4]
+  Aqi = x[5]
+  Aqu = x[6]
+  S = x[7]
+  I = x[8]
+  NIP = x[9]
+
+  
+  v = params[1]# vertical transmission tick
+  e = params[2]# fecundity tick 
+  beta = params[3] # contact rate
+  c = params[4] # competency host
+  u = params[5] # death tick
+  gamma = params[6] # recovery host
+  D = params[7] # deer 
+  
+  dLqidt = v*e*D*Aqi - (beta*I*c*Lqi + beta*S*(1-c)*Lqi) - u*Lqi
+  dLqudt = (1-v)*e*D*Aqi + e*D*Aqu - (beta*I*c*Lqu + beta*S*(1-c)*Lqu) - u*Lqu
+  
+  dNqidt = (beta*I*Lqi*c + beta*S*Lqi*(1-c) + beta*I*Lqu*c) - (beta*I*Nqi*c + beta*S*Lqu*(1-c)) - u*Nqi
+  dNqudt = beta*S*Lqu*(1-c) - (beta*I*Nqu*c + beta*S*Nqu*(1-c)) - u*Nqu
+  
+  dAqidt = (beta*I*Nqi*c + beta*S*Nqi*(1-c) + beta*I*Nqu*c) - (v*e*Aqi + (1-v)*e*D*Aqi)- u*D*Aqi
+  dAqudt = beta*S*Nqu*(1-c) - e*D*Aqu - u*D*Aqu
+  
+  dSdt = gamma*I - beta*S*I
+  dIdt = beta*S*I - gamma*I
+  
+  dNIPdt = (Nqi/(Nqi + Nqu))
+  
+  return(list(c(dLqidt,dLqudt,
+                dNqidt,dNqudt,
+                dAqidt,dAqudt,
+                dSdt, dIdt,
+                dNIPdt)))
+}
+
+Lqi0 = 1
+Lqu0 = 99
+  
+Nqi0 = 0
+Nqu0 = 50
+  
+Aqi0 = 0
+Aqu0 = 25
+  
+S0 = 19
+I0 = 1
+
+NIP0 = Nqi0/(Nqi0 + Nqu0)
+
+initial_values = c(Lqi = Lqi0,Lqu = Lqu0,
+                   Nqi = Nqi0,Nqu = Nqu0,
+                   Aqi = Aqi0,Aqu = Aqu0,
+                   S = S0, I = I0,
+                   NIP = NIP0)
+
+  v = .7# vertical transmission tick # used .07
+  e = 1000
+  #e = f*Aqi*e^(-D)#120.50 # fecundity tick # used 1.5 # make this density dependent
+  # v*e*D*A*exp(-c*Atot (Au + Ai)) add density dependent
+  # v*e*D*A/(1 + c*Aot) # alternative way
+  beta = .9 # contact rate # used .1
+  c = .9# competency host # used .9
+  u = .000001 # death tick # used .01
+  gamma = 0.3 # recovery host # used .3
+  D = 1 # number of deer  # used 1
+  
+parameters = c(v, e, beta, c, u, gamma, D)
+
+times = seq(0, 30, length.out = 1000)
+
+results = lsoda(initial_values, times, tick.host.model, parameters)
+head(results)
+
+Lcol = 'blue'
+Ncol = 'orange'
+Acol = 'green'
+NIPcol = 'red'
+Scol = 'pink'
+Icol = 'purple'
+
+plot(x = results[,"time"], y = results[,"Lqi"],
+     type = 'l', col = Lcol, lwd =2,
+     xlab = 'time', ylab = 'Number of Individuals',
+     main = "Infected Questing Tick Lifestages",
+     ylim = c(0, 100))
+lines(x = results[,'time'], y = results[,'Lqu'], col = Lcol, lwd = 1)
+lines(x = results[,'time'], y = results[,'Nqi'], col = Ncol, lwd = 2)
+lines(x = results[,'time'], y = results[,'Nqu'], col = Ncol, lwd = 1)
+lines(x = results[,'time'], y = results[,'Aqi'], col = Acol, lwd = 2)
+lines(x = results[,'time'], y = results[,'Aqu'], col = Acol, lwd = 1)
+lines(x = results[,'time'], y = results[,'S'], col = Scol, lwd = 1, lty = 2)
+lines(x = results[,'time'], y = results[,'I'], col = Icol, lwd = 2, lty = 2)
+#lines(x = results[,'time'], y = results[,'NIP'], col = NIPcol, lwd = 5, lty = 2)
+legend('topright', legend = c('L','N','A'), col = c(Lcol, Ncol, Acol), lwd = 2)
+# PLOT NIP
+# plot(x = results[,"time"], y = results[,"Nqi"],
+#      type = 'l', col = Lcol, lwd =2,
+#      xlab = 'time', ylab = 'Number of Individuals',
+#      main = "Infected Questing Tick Lifestages",
+#      ylim = c(0, 150))
+# lines(x = results[,'time'], y = results[,'NIP'], col = NIPcol, lwd = 5, lty = 2)
+# lines(x = results[,'time'], y = results[,'Nqu'], col = Ncol, lwd = 5, lty = 2)
+
+#View(results)
+
+
+```
+
+```{r tick.host.model changing beta}
+
+#### beta = .9 ####
+  v = .7# vertical transmission tick # used .07
+  e = 120.50 # fecundity tick # used 1.5
+  beta = .9 # contact rate # used .1
+  c = .9# competency host # used .9
+  u = .1 # death tick # used .01
+  gamma = 0.3 # recovery host # used .3
+  D = 1 # number of deer  # used 1
+  
+parameters2 = c(v, e, beta, c, u, gamma, D)
+results2 = lsoda(initial_values, times, tick.host.model, parameters2)
+head(results)
+
+#### beta = .5 ####
+  v = .5# vertical transmission tick # used .07
+  e = 120.50 # fecundity tick # used 1.5
+  beta = .5 # contact rate # used .1
+  c = .9# competency host # used .9
+  u = .1 # death tick # used .01
+  gamma = 0.3 # recovery host # used .3
+  D = 1 # number of deer  # used 1
+  
+parameters2 = c(v, e, beta, c, u, gamma, D)
+results2 = lsoda(initial_values, times, tick.host.model, parameters2)
+head(results)
+
+#### beta = .1 ####
+  v = .7# vertical transmission tick # used .07
+  e = 120.50 # fecundity tick # used 1.5
+  beta = .1 # contact rate # used .1
+  c = .9# competency host # used .9
+  u = .1 # death tick # used .01
+  gamma = 0.3 # recovery host # used .3
+  D = 1 # number of deer  # used 1
+  
+parameters3 = c(v, e, beta, c, u, gamma, D)
+results3 = lsoda(initial_values, times, tick.host.model, parameters3)
+head(results)
+
+max(results1[,'Nqi'])
+max(results2[,'Nqi'])
+max(results3[,'Nqi'])
+
+## plot it! ##
+
+plot(x = results1[,"time"], y = results1[,"Nqi"], 
+     type = 'l', col = Ncol, lwd =3,
+     xlab = 'time', ylab = 'Number of Individuals',
+     main = "Infected Questing Tick Lifestages",
+     ylim = c(0, 100))
+lines(x = results2[,'time'], y = results2[,'Nqi'], col = Ncol, lwd = 2)
+lines(x = results3[,'time'], y = results3[,'Nqi'], col = Ncol, lwd = 1)
+
+
+```
+
+```{r change beta and vertical transmssion}
+#### beta = .9, v = .9 ####
+  v = .9 # vertical transmission tick # used .07
+  e = 120.50 # fecundity tick # used 1.5
+  beta = .9 # contact rate # used .1
+  c = .9# competency host # used .9
+  u = .1 # death tick # used .01
+  gamma = 0.3 # recovery host # used .3
+  D = 1 # number of deer  # used 1
+  
+parameters4 = c(v, e, beta, c, u, gamma, D)
+results4 = lsoda(initial_values, times, tick.host.model, parameters4)
+head(results)
+
+#### beta = .5, v = .5 ####
+  v = .5 # vertical transmission tick # used .07
+  e = 120.50 # fecundity tick # used 1.5
+  beta = .9 # contact rate # used .1
+  c = .9# competency host # used .9
+  u = .1 # death tick # used .01
+  gamma = 0.3 # recovery host # used .3
+  D = 1 # number of deer  # used 1
+  
+parameters5 = c(v, e, beta, c, u, gamma, D)
+results5 = lsoda(initial_values, times, tick.host.model, parameters5)
+head(results)
+
+#### beta = .1, v = .1 ####
+  v = .01 # vertical transmission tick # used .07
+  e = 120.50 # fecundity tick # used 1.5
+  beta = .9 # contact rate # used .1
+  c = .9# competency host # used .9
+  u = .1 # death tick # used .01
+  gamma = 0.3 # recovery host # used .3
+  D = 1 # number of deer  # used 1
+  
+parameters6 = c(v, e, beta, c, u, gamma, D)
+results6 = lsoda(initial_values, times, tick.host.model, parameters6)
+head(results)
+
+
+## plot it! ##
+
+plot(x = results4[,"time"], y = results1[,"Nqi"], 
+     type = 'l', col = Ncol, lwd =3,
+     xlab = 'time', ylab = 'Number of Individuals',
+     main = "Infected Questing Tick Lifestages",
+     ylim = c(0, 100))
+lines(x = results5[,'time'], y = results2[,'Nqi'], col = Ncol, lwd = 2)
+lines(x = results6[,'time'], y = results3[,'Nqi'], col = Ncol, lwd = 1)
+
+```
+```{r plots of changing v, keeping beta = .9}
+## changed beta = c(.9, .6, .1)
+plot(x = results1[,"time"], y = results1[,"Nqi"], 
+     type = 'l', col = Ncol, lwd =3,
+     xlab = 'time', ylab = 'Number of Individuals',
+     main = "Infected Questing Tick Lifestages",
+     ylim = c(0, 100))
+lines(x = results2[,'time'], y = results2[,'Nqi'], col = Ncol, lwd = 2)
+lines(x = results3[,'time'], y = results3[,'Nqi'], col = Ncol, lwd = 1)
+
+## changed v = c(.9, .5, .1) and kept beta = .9 
+plot(x = results4[,"time"], y = results1[,"Nqi"], 
+     type = 'l', col = Ncol, lwd =3,
+     xlab = 'time', ylab = 'Number of Individuals',
+     main = "Infected Questing Tick Lifestages",
+     ylim = c(0, 100))
+lines(x = results5[,'time'], y = results2[,'Nqi'], col = Ncol, lwd = 2)
+lines(x = results6[,'time'], y = results3[,'Nqi'], col = Ncol, lwd = 1)
+
+
+```
+Maximum number of infected, questing nymphs?
+```{r comparing models}
+### max infected questing nymphs ##
+# changed beta (.9, .5, .1)
+max(results1[,'Nqi'])
+max(results2[,'Nqi'])
+max(results3[,'Nqi'])
+
+# changed v (.9, .5, .1), kept beta = .9
+max(results4[,'Nqi'])
+max(results5[,'Nqi'])
+max(results6[,'Nqi'])
+```
+
+
+When was the rate of transmission highest?
+```{r}
+# rate of transmision = dI/dt
+# dI/dt = B*S*I
+
+## solution
+NewInfec <-
+```
+
+
+```{r beta = .01}
+v = .7# vertical transmission tick # used .07
+  e = 120.50 # fecundity tick # used 1.5
+  beta = .01 # contact rate # used .1
+  c = .9# competency host # used .9
+  u = .1 # death tick # used .01
+  gamma = 0.3 # recovery host # used .3
+  D = 1 # number of deer  # used 1
+  
+parameters3 = c(v, e, beta, c, u, gamma, D)
+
+times = seq(0, 30, length.out = 1000)
+
+results3 = lsoda(initial_values, times, tick.host.model, parameters3)
+head(results)
+
+Lcol = 'blue'
+Ncol = 'orange'
+Acol = 'green'
+NIPcol = 'red'
+Scol = 'pink'
+Icol = 'purple'
+
+plot(x = results[,"time"], y = results[,"Lqi"], 
+     type = 'l', col = Lcol, lwd =2,
+     xlab = 'time', ylab = 'Number of Individuals',
+     main = "Infected Questing Tick Lifestages",
+     ylim = c(0, 100))
+#lines(x = results[,'time'], y = results[,'Lqu'], col = Lcol, lwd = 1)
+lines(x = results[,'time'], y = results[,'Nqi'], col = Ncol, lwd = 2)
+#lines(x = results[,'time'], y = results[,'Nqu'], col = Ncol, lwd = 1)
+lines(x = results[,'time'], y = results[,'Aqi'], col = Acol, lwd = 2)
+#lines(x = results[,'time'], y = results[,'Aqu'], col = Acol, lwd = 1)
+lines(x = results[,'time'], y = results[,'S'], col = Scol, lwd = 1, lty = 2)
+lines(x = results[,'time'], y = results[,'I'], col = Icol, lwd = 2, lty = 2)
+#lines(x = results[,'time'], y = results[,'NIP'], col = NIPcol, lwd = 5, lty = 2)
+legend('topright', legend = c('L','N','A'), col = c(Lcol, Ncol, Acol), lwd = 2)
+# PLOT NIP
+# plot(x = results[,"time"], y = results[,"Nqi"], 
+#      type = 'l', col = Lcol, lwd =2,
+#      xlab = 'time', ylab = 'Number of Individuals',
+#      main = "Infected Questing Tick Lifestages",
+#      ylim = c(0, 150))
+# lines(x = results[,'time'], y = results[,'NIP'], col = NIPcol, lwd = 5, lty = 2)
+# lines(x = results[,'time'], y = results[,'Nqu'], col = Ncol, lwd = 5, lty = 2)
+max(results1[,'Nqi'])
+max(results2[,'Nqi'])
+max(results3[,'Nqi'])
+```
+
+
+```{r bifurcation not working}
+### varaibles
+    Lqi = x[1]
+    Lqu = x[2]
+    Nqi = x[3]
+    Nqu = x[4]
+    Aqi = x[5]
+    Aqu = x[6]
+    S = x[7]
+    I = x[8]
+    NIP = x[9]
+    t = x[10]
+
+### parameters
+  v = .7 # vertical transmission tick # used .07
+  e = 120.50 # fecundity tick # used 1.5
+  beta = .1 # contact rate # used .1
+  c = .9# competency host # used .9
+  u = .1 # death tick # used .01
+  gamma = 0.3 # recovery host # used .3
+  D = 1 # number of deer  # used 1
+  
+### Initial values
+Lqi0 = 1
+Lqu0 = 99
+  
+Nqi0 = 0
+Nqu0 = 50
+  
+Aqi0 = 0
+Aqu0 = 25
+  
+S0 = 19
+I0 = 1
+
+NIP0 = Nqi0/(Nqi0 + Nqu0)
+
+t = 0
+  
+######### check predictions performing a simulation #####
+## I am interested in infected contact rate changing Nqi and I
+
+tset <- seq(0, 100, length.out = 5000)
+
+Nqi.simu <-NaN*tset; Nqi.simu[1] <- Nqi0
+I.simu <-NaN*tset; I.simu[1] <- I0
+  
+for(i in 2:length(tset)) {
+  dt <- tset[i] - tset[i-1]
+  Nqi <- Nqi.simu[i-1]
+  I <- I.simu[i-1]
+  dLqidt = (v*e*D*Aqi - (beta*I*c*Lqi + beta*S*(1-c)*Lqi) - u*Lqi)*dt
+  dLqudt = ((1-v)*e*D*Aqi + e*D*Aqu - (beta*I*c*Lqu + beta*S*(1-c)*Lqu) - u*Lqu)*dt
+  
+  dNqidt = ((beta*I*Lqi*c + beta*S*Lqi*(1-c) + beta*I*Lqu*c) - (beta*I*Nqi*c + beta*S*Lqu*(1-c)) - u*Nqi)*dt
+  dNqudt = (beta*S*Lqu*(1-c) - (beta*I*Nqu*c + beta*S*Nqu*(1-c)) - u*Nqu)*dt
+  
+  dAqidt = ((beta*I*Nqi*c + beta*S*Nqi*(1-c) + beta*I*Nqu*c) - (v*e*Aqi + (1-v)*e*D*Aqi)- u*D*Aqi)*dt
+  dAqudt = (beta*S*Nqu*(1-c) - e*D*Aqu - u*D*Aqu)*dt
+  
+  dSdt = (gamma*I - beta*S*I)*dt
+  dIdt = (beta*S*I - gamma*I)*dt
+  
+  Nqi.simu[i] <- Nqi.simu[i-1] + dNqidt
+  I.simu[i] <- I.simu[i-1] + dIdt
+}
+
+ 
+plot(x = tset, y = Nqi.simu, col = Ncol, type = 'l',
+     xlab = 'Time', ylab = 'Population size', lwd = 2, las = 1)
+
+
+
+# vector testing contact rate
+bset <- seq(0, 1, length.out = 10)
+
+  
+  
+Nqistar <- NaN*bset
+Istar <- Nqistar
+
+for(j in 1:length(bset)) {
+  b <- aset[j]
+  Nqi.simu <-NaN*tset; Nqi.simu[1] <- 1
+  I.simu <-NaN*tset; I.simu[1] <- 1
+  
+
+
+tick.host.model <- function(t, x, params) {
+  Lqi = x[1]
+  Lqu = x[2]
+  Nqi = x[3]
+  Nqu = x[4]
+  Aqi = x[5]
+  Aqu = x[6]
+  S = x[7]
+  I = x[8]
+  NIP = x[9]
+
+  
+  v = params[1]# vertical transmission tick
+  e = params[2]# fecundity tick 
+  beta = params[3] # contact rate
+  c = params[4] # competency host
+  u = params[5] # death tick
+  gamma = params[6] # recovery host
+  D = params[7] # deer 
+  
+  dLqidt = v*e*D*Aqi - (beta*I*c*Lqi + beta*S*(1-c)*Lqi) - u*Lqi
+  dLqudt = (1-v)*e*D*Aqi + e*D*Aqu - (beta*I*c*Lqu + beta*S*(1-c)*Lqu) - u*Lqu
+  
+  dNqidt = (beta*I*Lqi*c + beta*S*Lqi*(1-c) + beta*I*Lqu*c) - (beta*I*Nqi*c + beta*S*Lqu*(1-c)) - u*Nqi
+  dNqudt = beta*S*Lqu*(1-c) - (beta*I*Nqu*c + beta*S*Nqu*(1-c)) - u*Nqu
+  
+  dAqidt = (beta*I*Nqi*c + beta*S*Nqi*(1-c) + beta*I*Nqu*c) - (v*e*Aqi + (1-v)*e*D*Aqi)- u*D*Aqi
+  dAqudt = beta*S*Nqu*(1-c) - e*D*Aqu - u*D*Aqu
+  
+  dSdt = gamma*I - beta*S*I
+  dIdt = beta*S*I - gamma*I
+  
+  dNIPdt = (Nqi/(Nqi + Nqu))
+  
+  return(list(c(dLqidt,dLqudt,
+                dNqidt,dNqudt,
+                dAqidt,dAqudt,
+                dSdt, dIdt,
+                dNIPdt)))
+}
+
+Lqi0 = 1
+Lqu0 = 99
+  
+Nqi0 = 0
+Nqu0 = 50
+  
+Aqi0 = 0
+Aqu0 = 25
+  
+S0 = 19
+I0 = 1
+
+NIP0 = Nqi0/(Nqi0 + Nqu0)
+
+initial_values = c(Lqi = Lqi0,Lqu = Lqu0,
+                   Nqi = Nqi0,Nqu = Nqu0,
+                   Aqi = Aqi0,Aqu = Aqu0,
+                   S = S0, I = I0,
+                   NIP = NIP0)
+
+  v = .7# vertical transmission tick # used .07
+  e = 120.50 # fecundity tick # used 1.5
+  beta = .1 # contact rate # used .1
+  c = .9# competency host # used .9
+  u = .1 # death tick # used .01
+  gamma = 0.3 # recovery host # used .3
+  D = 1 # number of deer  # used 1
+  
+parameters = c(v, e, beta, c, u, gamma, D)
+
+times = seq(0, 30, length.out = 1000)
+
+results = lsoda(initial_values, times, tick.host.model, parameters)
+head(results)
+
+Lcol = 'blue'
+Ncol = 'orange'
+Acol = 'green'
+NIPcol = 'red'
+Scol = 'pink'
+Icol = 'purple'
+
+plot(x = results[,"time"], y = results[,"Lqi"], 
+     type = 'l', col = Lcol, lwd =2,
+     xlab = 'time', ylab = 'Number of Individuals',
+     main = "Infected Questing Tick Lifestages",
+     ylim = c(0, 100))
+#lines(x = results[,'time'], y = results[,'Lqu'], col = Lcol, lwd = 1)
+lines(x = results[,'time'], y = results[,'Nqi'], col = Ncol, lwd = 2)
+#lines(x = results[,'time'], y = results[,'Nqu'], col = Ncol, lwd = 1)
+lines(x = results[,'time'], y = results[,'Aqi'], col = Acol, lwd = 2)
+#lines(x = results[,'time'], y = results[,'Aqu'], col = Acol, lwd = 1)
+lines(x = results[,'time'], y = results[,'S'], col = Scol, lwd = 1, lty = 2)
+lines(x = results[,'time'], y = results[,'I'], col = Icol, lwd = 2, lty = 2)
+#lines(x = results[,'time'], y = results[,'NIP'], col = NIPcol, lwd = 5, lty = 2)
+legend('topright', legend = c('L','N','A'), col = c(Lcol, Ncol, Acol), lwd = 2)
+# PLOT NIP
+# plot(x = results[,"time"], y = results[,"Nqi"], 
+#      type = 'l', col = Lcol, lwd =2,
+#      xlab = 'time', ylab = 'Number of Individuals',
+#      main = "Infected Questing Tick Lifestages",
+#      ylim = c(0, 150))
+# lines(x = results[,'time'], y = results[,'NIP'], col = NIPcol, lwd = 5, lty = 2)
+# lines(x = results[,'time'], y = results[,'Nqu'], col = Ncol, lwd = 5, lty = 2)
+
+#View(results)
+```
+
+
+
+```{r check tot pop}
+tick.host.model <- function(t, x, params) {
+  Lqi = x[1]
+  Lqu = x[2]
+  Nqi = x[3]
+  Nqu = x[4]
+  Aqi = x[5]
+  Aqu = x[6]
+  S = x[7]
+  I = x[8]
+  T = x[9]
+  N = x[10]
+  
+  v = params[1]# vertical transmission tick
+  e = params[2]# fecundity tick 
+  beta = params[3] # contact rate
+  c = params[4] # competency host
+  u = params[5] # death tick
+  gamma = params[6] # recovery host
+  
+  dLqidt = v*e*Aqi - (beta*I*Lqi*c + beta*S*Lqi*(1-c)) #- u*Lqi
+  dLqudt = (1-v)*e*Aqi + e*Aqu - (beta*I*Lqu*c + beta*S*Lqu*(1-c)) #- u*Lqu
+  
+  dNqidt = (beta*I*Lqi*c + beta*S*Lqi*(1-c) + beta*I*Lqu*c) - (beta*I*Nqi*c + beta*S*Lqu*(1-c)) #- u*Nqi
+  dNqudt = beta*S*Lqu*(1-c) - (beta*I*Nqu*c + beta*S*Nqu*(1-c)) #- u*Nqu
+  
+  dAqidt = (beta*I*Nqi*c + beta*S*Nqi*(1-c) + beta*I*Nqu*c) - (v*e*Aqi + (1-v)*e*Aqi)- u*Aqi
+  dAqudt = beta*S*Nqu*(1-c) - e*Aqu #- u*Aqu
+  
+  dSdt = gamma*I - beta*S*I
+  dIdt = beta*S*I - gamma*I
+  
+  dTdt = dLqidt + dLqudt + dNqidt + dNqudt + dAqidt + dAqudt 
+  dNdt = dSdt + dIdt
+  
+  return(list(c(dLqidt,dLqudt,
+                dNqidt,dNqudt,
+                dAqidt,dAqudt,
+                dSdt, dIdt,
+                dTdt, dNdt)))
+}
+
+Lqi0 = 10
+Lqu0 = 90
+  
+Nqi0 = 30
+Nqu0 = 20
+  
+Aqi0 = 19
+Aqu0 = 1
+
+S0 = 19
+I0 = 1
+
+T = 170
+N = 20
+
+initial_values = c(Lqi = Lqi0,Lqu = Lqu0,
+                   Nqi = Nqi0,Nqu = Nqu0,
+                   Aqi = Aqi0,Aqu = Aqu0,
+                   S = S0, I = I0,
+                   T = T, N = N)
+
+  v = .07# vertical transmission tick
+  e = 1.5# fecundity tick 
+  beta = 0.1 # contact rate
+  c = .9# competency host
+  u = .01 # death tick
+  gamma = 0.3 # recovery host
+  
+parameters = c(v, e, beta, c, u, gamma)
+
+times = seq(0, 60, length.out = 1000)
+
+results = lsoda(initial_values, times, tick.host.model, parameters)
+head(results)
+
+Lcol = 'pink'
+Ncol = 'purple'
+Acol = 'maroon'
+
+plot(x = results[,"time"], y = results[,"Lqi"], 
+     type = 'l', col = Lcol, lwd =2,
+     xlab = 'time', ylab = 'Number of Individuals',
+     main = "ODE solver",
+     ylim = c(0, 150))
+#lines(x = results[,'time'], y = results[,'Lqu'], col = Lcol, lwd = 1)
+lines(x = results[,'time'], y = results[,'Nqi'], col = Ncol, lwd = 2)
+#lines(x = results[,'time'], y = results[,'Nqu'], col = Ncol, lwd = 1)
+lines(x = results[,'time'], y = results[,'Aqi'], col = Acol, lwd = 2)
+#lines(x = results[,'time'], y = results[,'Aqu'], col = Acol, lwd = 1)
+lines(x = results[,'time'], y = results[,'S'], col = Scol, lwd = 1, lty = 2)
+lines(x = results[,'time'], y = results[,'I'], col = Icol, lwd = 2, lty = 2)
+#lines(x = results[,'time'], y = results[,'T'], col = 'grey', lwd = 2, lty = 2)
+#lines(x = results[,'time'], y = results[,'N'], col = 'lightgrey', lwd = 2, lty = 2)
+
+#View(results)
+```
+
+
+
+```{r giardina and loguice model}
+community.model <- function(t, x, params) {
+  Li = x[1]
+  Lu = x[2]
+  Ni = x[3]
+  Nu = x[4]
+  Ai = x[5]
+  Au = x[6]
+  NIP = x[7]
+  t = x[8]
+  
+  u = params[1]
+  H = params[2]
+  b = params[3]
+  H1 = params[4]
+  Bl1 = params[5]
+  Bn1 = params[6]
+  ci1 = params[7]
+  f = params[8]
+  
+  # H2 = params[8]
+  # Bl2 = params[9]
+  # Bn2 = params[10]
+  # ci2 = params[11]
+  # 
+  # H3 = params[12]
+  # Bl3 = params[13]
+  # Bn3 = params[14]
+  # ci3 = params[15]
+    
+  dLidt = H*t^(-b*t) - H1*Bl1*ci1*Li - u*Li
+  dLudt = H*t^(-b*t) - H1*Bl1*(1-ci1)*Lu - u*Lu
+  dNidt = H1*Bl1*ci1*Li - H1*Bn1*ci1*Ni - u*Ni
+  dNudt = H1*Bl1*(1-ci1)*Li - H1*Bn1*(1-ci1)*Nu - u*Nu
+  dAidt = H1*Bn1*ci1*Ni - u*Ai - f*Ai
+  dAudt = H1*Bn1*(1-ci1)*Nu - u*Au - f*Au
+  dNIPdt = Ni/(Ni + Nu)
+
+  
+  return(list(c(dLidt,dLudt,
+                dNidt, dNudt,
+                dAidt, dAudt,
+                dNIPdt,t)))
+}
+
+Li0 = 10
+Lu0 = 90
+  
+Ni0 = 30
+Nu0 = 20
+ 
+Ai0 = 10
+Au0 = 5
+
+NIP0 = Ni0 / (Ni0 + Nu0)
+t0 = 0
+
+
+initial_values = c(Li = Li0,Lu = Lu0,
+                   Ni = Ni0,Nu = Nu0,
+                   Ai = Ai0, Au = Au0,
+                   NIP = NIP0,
+                    t = t0)
+
+  u = 0.1 # natural mortality
+  H = 2000 # emerging larvae
+  b = 20 # time delay
+  H1 = 23 # nefu
+  Bl1 = 12 # larval burden
+  Bn1 = 3 # nymphal burden
+  ci1 = .9 # competence
+  f = .1 # fecundity 
+  
+parameters = c(u, H, b, H1, Bl1, Bn1, ci1, f)
+
+times = seq(0, 60, length.out = 1000)
+
+results = lsoda(initial_values, times, community.model, parameters)
+head(results)
+
+Lcol = 'red'
+Ncol = 'blue'
+NIPcol = 'green'
+
+plot(x = results[,"time"], y = results[,"Li"], 
+     type = 'l', col = Lcol, lwd =2,
+     xlab = 'time', ylab = 'Number of Individuals',
+     main = "ODE solver",
+     ylim = c(0, 150))
+lines(x = results[,'time'], y = results[,'Lu'], col = 'black', lwd = 1)
+lines(x = results[,'time'], y = results[,'Ni'], col = Ncol, lwd = 2)
+lines(x = results[,'time'], y = results[,'Nu'], col = 'grey', lwd = 1)
+lines(x = results[,'time'], y = results[,'NIP'], col = NIPcol, lwd = 2)
+lines(x = results[,'time'], y = results[,'Ai'], col = Acol, lwd = 1)
+# lines(x = results[,'time'], y = results[,'S'], col = Scol, lwd = 1, lty = 2)
+# lines(x = results[,'time'], y = results[,'I'], col = Icol, lwd = 2, lty = 2)
+#legend('topright', legend = c('Li', 'Lu', 'NIP'), col = c(Lcol, Ncol, NIPcol), lwd = 2)
+
+max(results[,"NIP"])
+
+```
+

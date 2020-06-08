@@ -1,0 +1,109 @@
+---
+title: "Giardina model"
+author: "sbsambado"
+date: "5/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Variation in composition of communities of ticks and hosts will influence tick infection prevalence and disease risk 
+
+number of blood meals
+  ml, i = number of blood meals for larvae on i host
+  mn, i = number of blood meals for nymphs on i host
+  
+i = species of host
+  1 = mice
+  2 = wood rat
+  3 = lizard
+
+N = number of i species
+
+B = number of ticks on host 
+  Bl,i = number of larvae on i species
+  Bn,i = number of nymphs on i species
+
+
+```{r number of blood meals by species and tick life stage}
+# inital values
+l10 = 2
+n10 = 1
+
+l20 = 2
+n20 = 1
+  
+l30 = 2
+n30 = 1
+
+# parameters
+
+# density of species
+N1 = 50 #mice
+N2 = 25 # NEFU
+N3 = 30 # lizards
+
+# contact rate of species and life stage of ticks
+
+# contact rate between i species and larval ticks
+Bl1 = 9
+Bl2 = 6
+Bl3 = 15
+ 
+# contact rate between i species and nymphal ticks
+Bn1 = 4
+Bn2 = 2
+Bn3 = 9
+
+# simulate
+tset <- seq(0, 60, 1)
+l1.simu <- NaN*tset; l1.simu[1] <- l10
+n1.simu <- NaN*tset; n1.simu[1] <- n10
+l2.simu <- NaN*tset; l2.simu[1] <- l20
+n2.simu <- NaN*tset; n2.simu[1] <- n20
+l3.simu <- NaN*tset; l3.simu[1] <- l30
+n3.simu <- NaN*tset; n3.simu[1] <- n30
+
+# l10 <- l1.simu[length(tset)]
+# n10 <- n1.simu[length(tset)]
+# l20 <- l2.simu[length(tset)]
+# n20 <- n2.simu[length(tset)]
+# l30 <- l3.simu[length(tset)]
+# n30 <- n3.simu[length(tset)]
+
+B = 2
+for(i in 2:length(tset)) {
+  dt <- tset[i] - tset[i-1]
+    
+  dl1 <- N1*B*l1[i]*dt
+  dn1<- N1*B*n1[i]*dt
+  
+  dl2<- N2*B*l2[i]*dt
+  dn2<- N2*B*n2[i]*dt
+  
+  dl3<- N3*Bl3[i]*dt
+  dn3<- N3*Bn3[i]*dt
+  
+  l1.simu[1] <- l1.simu[i-1] + dl1
+  n1.simu[1] <- n1.simu[i-1] + dn1
+  l2.simu[1] <- l2.simu[i-1] + dl2
+  mn2.simu[1] <- n2.simu[i-1] + dn2
+  ml3.simu[1] <- l3.simu[i-1] + dl3
+  mn3.simu[1] <- n3.simu[i-1] + dn3
+}
+
+
+dl1 <- N1*Bl1
+  dn1<- N1*Bn1
+  
+  dl2<- N2*Bl2
+  dn2<- N2*Bn2
+  
+  dl3<- N3*Bl2
+  dn3<- N3*Bn2
+
+  
+```
+

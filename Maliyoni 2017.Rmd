@@ -1,0 +1,379 @@
+---
+title: "Mliyoni 2017 extension"
+author: "sbsambado"
+date: "6/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r density dependent host tick metapopulation}
+library(deSolve)
+
+host.tick <- function(t, x, params) {
+  S = x[1]
+  X = x[2]
+  
+  T = x[3]
+  Y = x[4]
+  
+  V = x[5] # total tick pop
+  N = x[6] # total host pop
+  
+  beta = params[1]
+  beta_hat = params[2]
+  K = params[3]
+  M = params[4]
+  b = params[5]
+  b_hat = params[6]
+  A_hat = params[7]
+  A = params[8]
+  v = params[9]
+  
+  dSdt = (beta_hat*V) - (beta_hat*((S*V)/(M*N))) - (A*((S*Y)/N)) - (b_hat*S)
+  dXdt = (A*((S*Y)/N)) - (beta_hat*((X*V)/M*N)) - (b_hat*X)
+  
+  dTdt = (beta*N) - (beta*((T*N)/K)) - (A_hat*((T*X)/N)) - (b*T) + (v*Y)
+  dYdt = (A_hat*((T*X)/N)) - (beta*((Y*N)/K)) - ((b + v)*Y)
+  
+  dVdt = (dSdt + dXdt)
+  dNdt = (dTdt + dYdt)
+  
+  return(list(c(dSdt, dXdt, dTdt, dYdt, dVdt, dNdt)))
+}
+# tick
+#V = S + X
+S0 = 100 # susceptible tick
+X0 = 1 # infected tick
+V = 101 # tick pop v = s + x
+
+
+# host
+T0 = 20 # susceptible host
+Y0 = 0 # infected host
+N = 20 # host pop n = t + y
+
+initial_values = c(S = S0, X = X0, V = V,
+                   T = T0, Y = Y0, N = N)
+
+
+# decent params, .2, .9, 300, 3000, .01, .01, .2, .7, .9
+# .2, .75, 1200, 100, .01, .001, .005, .05, .51 for 1000, 125 and 1000 114
+  beta = .02 # growth rate host
+  beta_hat = 1 # growth rate ticks
+  K = 25 # carrying capacity for hosts per m^2
+  M = 100 # max number of ticks per host # OG 200
+  b = 0.2 # natural mortality host
+  b_hat = 0.2 # natural mortality ticks # OG .01 
+  A_hat = 0.08 # transmission rate from ticks to hosts #OG .02
+  A = 0.05 # transmission rate from host to ticks # OG .07
+  v = .6 # host recovery rate
+  
+parameters = c(beta, beta_hat, K, M, b, b_hat, A_hat, A, v)
+
+times = seq(0, 60, length.out = 10000)
+
+results = lsoda(initial_values, times, host.tick, parameters)
+head(results)
+
+Scol = 'green'
+Xcol = 'red'
+Tcol = 'blue'
+Ycol = 'orange'
+
+plot(x = results[, "time"], y = results[, "S"], type = 'l', col=Scol, las = 1, lwd=2, xlab = 'Time', ylab = 'Number of Individuals', ylim = c(0,200),
+     xlim = c(0,60),main = "Host - Tick Metapopulation Model")
+lines(x = results[, "time"], y = results[, "X"], col = Xcol, lwd = 2)
+lines(x = results[, "time"], y = results[, "T"], col = Tcol, lwd = 2)
+lines(x = results[, "time"], y = results[, "Y"], col = Ycol, lwd = 2)
+#lines(x = results[, "time"], y = results[, "V"], col = 'black', lwd = 2)
+#lines(x = results[, "time"], y = results[, "N"], col = 'grey', lwd = 2)
+legend('topright', legend = c('Tick, Uninfected (S)', 'Tick, Infected (X)', 'Host Uninfected (T)', 'Host Infected (Y)','Tick pop', 'Host pop'), col = c(Scol, Xcol, Tcol, Ycol, 'black', 'grey'),
+       lwd = 2,cex = 0.9)
+
+
+```
+
+
+
+
+```{r not density dependent}
+library(deSolve)
+
+host.tick <- function(t, x, params) {
+  S = x[1]
+  X = x[2]
+  
+  T = x[3]
+  Y = x[4]
+  
+  V = x[5] # total tick pop
+  N = x[6] # total host pop
+  
+  beta = params[1]
+  beta_hat = params[2]
+  K = params[3]
+  M = params[4]
+  b = params[5]
+  b_hat = params[6]
+  A_hat = params[7]
+  A = params[8]
+  v = params[9]
+  
+  dSdt = (beta_hat*V) - ((beta_hat*S*V)/(M*N)) - ((A*S*Y)/N) - (b_hat*S)
+  dXdt = (A*((S*Y)/N)) - ((beta_hat*X*V)/M*N) - (b_hat*X)
+  
+  dTdt = (beta*N) - ((beta*T*N)/K) - ((A_hat*T*X)/N) - (b*T) + (v*Y)
+  dYdt = ((A_hat*T*X)/N) - ((beta*Y*N)/K) - ((b + v)*Y)
+  
+  dVdt = (dSdt + dXdt)
+  dNdt = (dTdt + dYdt)
+  
+  return(list(c(dSdt, dXdt, dTdt, dYdt, dVdt, dNdt)))
+}
+# tick
+#V = S + X
+S0 = 1000 # susceptible tick
+X0 = 225 # infected tick
+V = 1225 # tick pop v = s + x
+
+
+# host
+T0 = 1000 # susceptible host
+Y0 = 200 # infected host
+N = 1200 # host pop n = t + y
+
+initial_values = c(S = S0, X = X0, V = V,
+                   T = T0, Y = Y0, N = N)
+
+
+# decent params, .2, .9, 300, 3000, .01, .01, .2, .7, .9
+# .2, .75, 1200, 100, .01, .001, .005, .05, .51 for 1000, 125 and 1000 114
+  beta = .42 # growth rate host
+  beta_hat = .95 # growth rate ticks
+  K = 1200 # carrying capacity for hosts per m^2
+  M = 100 # max number of ticks per host # OG 200
+  b = 0.01 # natural mortality host
+  b_hat = 0.001 # natural mortality ticks # OG .01 
+  A_hat = 0.002 # transmission rate from ticks to hosts #OG .02
+  A = 0.002 # transmission rate from host to ticks # OG .07
+  v = .91 # host recovery rate
+  
+parameters = c(beta, beta_hat, K, M, b, b_hat, A_hat, A, v)
+
+times = seq(0, 60, length.out = 10000)
+
+results = lsoda(initial_values, times, host.tick, parameters)
+head(results)
+
+Scol = 'green'
+Xcol = 'red'
+Tcol = 'blue'
+Ycol = 'orange'
+
+plot(x = results[, "time"], y = results[, "S"], type = 'l', col=Scol, las = 1, lwd=2, xlab = 'Time', ylab = 'Number of Individuals', ylim = c(0,2500),
+     xlim = c(0,60),main = "Host - Tick Metapopulation Model")
+lines(x = results[, "time"], y = results[, "X"], col = Xcol, lwd = 2)
+lines(x = results[, "time"], y = results[, "T"], col = Tcol, lwd = 2)
+lines(x = results[, "time"], y = results[, "Y"], col = Ycol, lwd = 2)
+#lines(x = results[, "time"], y = results[, "V"], col = 'black', lwd = 2)
+#lines(x = results[, "time"], y = results[, "N"], col = 'grey', lwd = 2)
+legend('topright', legend = c('Tick, Uninfected (S)', 'Tick, Infected (X)', 'Host Uninfected (T)', 'Host Infected (Y)','Tick pop', 'Host pop'), col = c(Scol, Xcol, Tcol, Ycol, 'black', 'grey'),
+       lwd = 2,cex = 0.9)
+
+```
+
+
+
+
+
+```{r WORKING no host mortality, changed T to H for susceptible host}
+host.tick <- function(t, x, params) {
+  T = x[1]
+  X = x[2]
+  
+  H = x[3]
+  Y = x[4]
+  
+  V = x[5] # total tick pop
+  N = x[6] # total host pop
+  
+  beta = params[1]
+  beta_hat = params[2]
+  K = params[3]
+  M = params[4]
+  b = params[5]
+  b_hat = params[6]
+  A_hat = params[7]
+  A = params[8]
+  v = params[9]
+  
+  # tick equations
+  dTdt = (beta_hat*V) - (beta_hat*((T*V)/(M*N))) - (A*((T*Y)/N)) - (b_hat*T) # susceptible
+  dXdt = (A*((T*Y)/N)) - (beta_hat*((X*V)/M*N)) - (b_hat*X) # infected
+  
+  # host equations
+  dHdt = (beta*N) - (beta*((H*N)/K)) - (A_hat*((H*X)/N)) + (v*Y) # susceptible
+  dYdt = (A_hat*((H*X)/N)) - (beta*((Y*N)/K)) - (v*Y) # infected
+  
+  # population equations
+  dVdt = (dTdt + dXdt) # tick pop
+  dNdt = (dHdt + dYdt) # host pop
+  
+  return(list(c(dTdt, dXdt, dHdt, dYdt, dVdt, dNdt)))
+}
+# tick
+#V = S + X
+T0 = 175 # susceptible tick
+X0 = 25 # infected tick
+V = T0 + X0 # tick pop v = s + x
+
+
+# host
+H0 = 99 # susceptible host
+Y0 = 1 # infected host
+N = H0 + Y0 # host pop n = t + y
+
+initial_values = c(T = T0, X = X0, V = V,
+                   H = H0, Y = Y0, N = N)
+
+
+# decent params, .2, .9, 300, 3000, .01, .01, .2, .7, .9
+# .2, .75, 1200, 100, .01, .001, .005, .05, .51 for 1000, 125 and 1000 114
+  beta = 0 # growth rate host
+  beta_hat = .02 # growth rate ticks
+  
+  K = 12 # carrying capacity for hosts per m^2
+  M = 15 # max number of ticks per host # OG 200
+  
+  b = 0 # natural mortality host
+  b_hat = 0.1 # natural mortality ticks # OG .01 
+  
+  A_hat = 0.9 # transmission rate from ticks to hosts #OG .02
+  A = 0.4 # transmission rate from host to ticks # OG .07
+  v = 0.9 # host recovery rate
+  
+parameters = c(beta, beta_hat, K, M, b, b_hat, A_hat, A, v)
+
+times = seq(0, 60, length.out = 10000)
+
+results = lsoda(initial_values, times, host.tick, parameters)
+head(results)
+tail(results)
+# make into data frame to analyze
+model.output <- as.data.frame(ode(y = initial_values, times = times, fun = host.tick, parms = parameters))
+str(model.output)
+
+Tcol = 'red'
+Xcol = 'red'
+Hcol = 'royalblue3'
+Ycol = 'royalblue3'
+
+plot(x = results[, "time"], y = results[, "T"], type = 'l', col=Tcol, las = 1, lwd=2, xlab = 'Time (days)', ylab = 'Number of Individuals', ylim = c(0,200), lty = 3,
+     xlim = c(0,60),main = "Host - Tick Metapopulation Model") # susceptible tick
+lines(x = results[, "time"], y = results[, "X"], col = Xcol, lwd = 2,lty = 1) # infected tick
+lines(x = results[, "time"], y = results[, "H"], col = Hcol, lwd = 2,lty = 3) # susceptible host
+lines(x = results[, "time"], y = results[, "Y"], col = Ycol, lwd = 2,lty = 1) # infected 
+#lines(x = results[, "time"], y = results[, "V"], col = 'black', lwd = 2) # tick
+#lines(x = results[, "time"], y = results[, "N"], col = 'grey', lwd = 2) # host
+legend('topright', legend = c('Tick, Uninfected (T)', 'Tick, Infected (X)', 'Host Uninfected (H)', 'Host Infected (Y)','Tick pop (V)', 'Host pop (N)'), col = c(Tcol, Xcol, Hcol, Ycol, 'black', 'grey'),
+        lty = c(3,1,3,1), lwd = 2, cex = 0.9)
+
+min(results[,])
+```
+
+```{r analyzing model output with no host growth rates}
+
+##### Max number of ticks infected at one time? ####
+## 198.9268
+max(model.output$X)
+
+#### What proportion of the population of ticks been infected over time? ####
+
+# V = T + X
+# V - T = X
+  # proportion of ticks infected (X/V) 
+    ## .125 or 12.5%
+      model.output$X[length(time)]/ V
+
+# N = H + Y
+# N - H = Y
+  # proportion of hosts infected (Y/N) 
+    ## 0.01 or 1%
+      model.output$Y[length(time)]/ N 
+
+### Plot number of infected
+  par(mfrow = c(2,1), mar = c(4,5,2,2))
+  ## Ticks
+    plot(x = model.output$time, y = (model.output$X/model.output$V ), type = 'l', las = 1, col = 'red', 
+         ylab = 'Number of Infected',
+         xlab = 'Time (days)',
+         lwd = 2,
+         cex.axis = .7, cex.lab = .8,
+         main = 'Ticks',
+         font.main = 2)
+   ## Hosts
+    plot(x = model.output$time, y = (model.output$Y/model.output$N ), type = 'l', las = 1, 
+         ylab = 'Number of Infected',
+         xlab = 'Time (days)',
+         col = 'red',
+         lwd = 2,
+         cex.axis= .7, cex.lab = .8,
+         main = 'Hosts', font.main = 2)
+par(mfrow = c(1,1))    
+#### When was the rate of transmission highest? ####
+
+# rate of transmission = dY/dt
+# dY/dt = A*(T*Y/N) - b_hat*T
+
+NewInfec <- A*((model.output$H)*(model.output$X)) # need to double check this
+plot(x = model.output$time, y = NewInfec, lwd = 1, type = 'l',
+     las = 1, 
+     ylab = 'New Infections',
+     xlab = 'Time (days)',
+     main = 'Max New Host Infections',
+     col = 'red')
+max.NewInfec <- max(NewInfec)
+
+for(i in 1:length(time)) {
+  if(NewInfec[i] == max.NewInfec){
+    T.maxnewinf <- tset[i]
+  }
+}
+T.maxnewinf
+abline(v = T.maxnewinf, lty = 2)
+
+#### What happens to R0 as Infectiousness (beta) increases? ####
+A_set <- seq(.1, .9, length.out = 1000)
+
+R0_set <- A_set*N/v
+
+plot(x = A_set, y = R0_set, type = 'l',
+     xlab = 'Host Population Size (N)',
+     ylab = 'Reproductive Number (R0)',
+     main = 'Change in Infectiousness (A)')
+
+#### What happens to R0 as N (host population) increases? ####
+N_set <- seq(1, 100, length.out = 1000)
+
+R0_set <- A*N_set/v
+
+plot(x = N_set, y = R0_set, type = 'l',
+     xlab = 'Host Population Size (N)',
+     ylab = 'Reproductive Number (R0)',
+     main = 'Change in Host Population Size (N)')
+
+
+### What happens to R0 as host recovery rate increases? ###
+v_set <- seq(.001, .1, length.out = 1000)
+
+R0_set <- A*N/v_set
+
+plot(x = v_set, y = R0_set, type = 'l',
+     xlab = 'Host Recovery Rate (gamma)',
+     ylab = 'Reproductive Number (R0)',
+     main = 'Change in Recovery rate (v)')
+```
+

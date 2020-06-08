@@ -638,7 +638,7 @@ reduced <- function(t, x, params) {
   t = params[1]
   k = params[2]
   b = params[3] # contact rate
-  p = params[4]
+  p = params[4] 
   y = params[5] # birth rate
   H = params[6]
   Hi = params[7]
@@ -716,6 +716,10 @@ lines(results[,'time'], results[,'Aqs'], type = 'l', col = 'green', lty = 2)
 
 ```
 
+
+```{r}
+
+```
 
 {r all phase transitions within one tick lifes stage LOL}
 all.phases <- function(t, x, params) {
