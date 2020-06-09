@@ -13,7 +13,8 @@ SISvector <- function(dt, inits, parms) {
   dU = - (alpha*U*I)/(S + I) + b*U - mu*U # U + V = N_vector
   dV = (alpha*U*I)/(S + I) + b*V - mu*V
   
-  return(list(c(dS, dI, dU, dV)))
+  return(list(c(dS, dI, 
+                dU, dV)))
   })
 }
 
@@ -24,7 +25,8 @@ I0 = 1
 U0 = 175 # infected vectors
 V0 = 25 # infected vectors
 
-inits <- c(S = S0, I = I0, U = U0,V = V0)
+inits <- c(S = S0, I = I0, 
+           U = U0,V = V0)
 
   beta = 0.8 # inoculation # .6
   alpha = 0.5  # acquisition # .5
@@ -50,17 +52,17 @@ legend('topright', legend = c('U hosts', 'I host', 'U vector', 'I vector'),
 times = seq(0,30, 0.1)
 
 
-# results = lsoda(initial_values, times, SIS.model.tick.host, parameters)
-# colnames(results) = c('time', 'susceptible host', 'infected host', 'susceptible tick', 'infected tick')
-# head(results)  
-#   
-# plot(results[, 'time'], results[,'susceptible host'], type = 'l', col = 'blue', 
-#      xlab = 'time', ylab = 'abundance', ylim = c(0,101), lty = 1)
-# lines(results[,'time'], results[,'infected host'], type = 'l', col = 'blue', lty = 2)
-# lines(results[,'time'], results[,'susceptible tick'], type = 'l', col = 'red', lty = 1)
-# lines(results[,'time'], results[,'infected tick'], type = 'l', col = 'red', lty = 2)
-# legend('topleft', legend = c('U hosts', 'I host', 'U vector', 'I vector'),
-#        col = c('blue', 'blue', 'red', 'red'), lwd = 2, lty = c(1,2,1,2), cex = 0.6)
+results = lsoda(inits, times, SIS.model.tick.host, parameters)
+colnames(results) = c('time', 'susceptible host', 'infected host', 'susceptible tick', 'infected tick')
+head(results)
+
+plot(results[, 'time'], results[,'susceptible host'], type = 'l', col = 'blue',
+     xlab = 'time', ylab = 'abundance', ylim = c(0,201), lty = 1)
+lines(results[,'time'], results[,'infected host'], type = 'l', col = 'blue', lty = 2)
+lines(results[,'time'], results[,'susceptible tick'], type = 'l', col = 'red', lty = 1)
+lines(results[,'time'], results[,'infected tick'], type = 'l', col = 'red', lty = 2)
+legend('topleft', legend = c('U hosts', 'I host', 'U vector', 'I vector'),
+       col = c('blue', 'blue', 'red', 'red'), lwd = 2, lty = c(1,2,1,2), cex = 0.6)
 ```
 
 ```{r change birth rate of vector}
