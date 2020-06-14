@@ -4892,3 +4892,60 @@ legend('topright', legend = c('Infected Hosts (Y)', 'Infected Ticks (X)'),
        col = c(Ycol, Xcol),lwd = 2)
 ```
 
+
+
+
+
+
+
+
+```{r calculate R0 for all simulations}
+N = 50
+gamma = .1
+
+A_hat_set <- seq(from = 0.001, to = 0.9, length.out = 100)
+R0_set <- A_hat_set*N/gamma
+plot(x = A_hat_set, y = R0_set, type = 'l', xlab = 'Infectiousness (A_hat)', ylab = 'Basic Reproductive Number (R_0)', las = 1, lwd = 1,
+     main = 'Host R0 for BM & BB')
+abline(v = .6, col = 'royalblue', lty = 1, lwd = 2)
+abline(v = .9, col = 'royalblue', lty = 3, lwd = 2)
+abline(v = .001, col = 'royalblue', lty = 1, lwd = 2)
+abline(v = .9, col = 'maroon', lty = 1, lwd = 2)
+abline(v = .3, col = 'maroon', lty = 1, lwd = 2)
+abline(v = .5, col = 'maroon', lty = 1, lwd = 2)
+legend('bottomright', legend = c('BM', 'BB'), col = c('maroon', 'royalblue'),
+       lwd = 2)
+
+
+A_hat = 0.5
+N_set <- seq(from = 1, to = 50, length.out = 100)
+R0_set <- A_hat*N_set/gamma
+plot(x = A_hat*N_set, y = R0_set, type = 'l', xlab = 'Host Abundance (N)', ylab = 'Basic Reproductive Number (R_0)', las = 1, lwd = 1, xlim = c(0,50))
+abline(v = 26, col = 'royalblue', lty = 1, lwd = 2)
+abline(v = 20, col = 'royalblue', lty = 3, lwd = 2)
+abline(v = 35, col = 'royalblue', lty = 1, lwd = 2)
+abline(v = 26, col = 'maroon', lty = 1, lwd = 2)
+abline(v = 20, col = 'maroon', lty = 1, lwd = 2)
+abline(v = 35, col = 'maroon', lty = 1, lwd = 2)
+legend('bottomright', legend = c('BM', 'BB'), col = c('maroon', 'royalblue'),
+       lwd = 2)
+
+
+
+
+
+
+R0.bb.pero <- .6*26/ .1
+R0.bb.nefu <- .9*20/ .1
+R0.bb.scoc <- .001*35/ .1
+
+bbprint= c(R0.bb.pero, R0.bb.nefu,R0.bb.scoc)
+
+R0.bm.pero <- .9*26/ .1
+R0.bm.nefu <- .3*20/ .1
+R0.bm.scoc <- .5*35/ .1
+
+bmprint= c(R0.bm.pero, R0.bm.nefu,R0.bm.scoc)
+
+```
+
