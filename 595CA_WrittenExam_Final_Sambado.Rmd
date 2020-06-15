@@ -1,8 +1,10 @@
 ---
-title: "595CA Written FINAL"
+title: "EEMB 595CA Written Exam FINAL"
 author: "sbsambado"
 date: "6/14/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -12,11 +14,11 @@ library(deSolve)
 ```
 
 
-3.1 Checking Model Behavior
+## Question 3.1 Checking Model Behavior
 
 Finding Equilibrium
+```{r 3.1 finding equilibrium, results in `final.model.output`}
 
-```{r finding equilibrium, results in `final.model.output`}
 tset<- seq(0, 60, length.out = 10000)
 
 final.model <- function(t, x, params) {
@@ -107,12 +109,12 @@ final.model.output[length(tset),'Y']
 
 ```
 
-#Checking Model sensitivity to different parameter values
+Checking Model sensitivity to different parameter values
 
-Three parameter values I simulated this with were 0.01 (low), 0.1 (medium), 0.9 (high)
+Three parameter values I simulated this with were: 0.01 (low), 0.1 (medium), and 0.9 (high).
 
-Chaning the transmission rate from host to tick, A
-```{r changing A (host to tick)}
+Changing the transmission rate from hosts to ticks, A
+```{r 3.1 changing A (host to tick)}
 ##########################
 # A = 0.01
 #########################
@@ -310,7 +312,7 @@ max(Y.simu1)
 
 
 Changing the transmission rate from ticks to hosts, A_hat
-```{r changing A_hat (tick to host)}
+```{r 3.1 changing A_hat (tick to host)}
 ##########################
 # A_hat = 0.01
 #########################
@@ -507,8 +509,8 @@ max(Y.simu2)
 max(Y.simu1)
 ```
 
-Changing gamma recovery rate for hosts (gamma)
-```{r changing gamma}
+Changing the recovery rate for hosts (gamma)
+```{r 3.1 changing gamma}
 ##########################
 # gamma = .01
 #########################
@@ -704,8 +706,8 @@ max(Y.simu2)
 max(Y.simu1)
 ```
 
-Changing the rate of vertical transmission, v
-```{r changing the rate of vertical transmssion, v}
+Changing the rate of vertical transmission in ticks, v
+```{r 3.1 changing the rate of vertical transmssion, v}
 ##########################
 # v = .01
 #########################
@@ -902,8 +904,8 @@ max(X.simu1)
 ```
 
 
-Changing the birth rate, b
-```{r changing birth rate, b}
+Changing the birth rate of ticks, b
+```{r 3.1 changing birth rate, b}
 ##########################
 # b = .01
 #########################
@@ -1097,7 +1099,8 @@ max(Y.simu1)
 ```
 
 ## Question 3.2 How does competency influence B. miyamotoi and B. burgdorferi risk?
-Base parameters, same host densities
+
+Used the base parameters used to find equilibrium, used the same host densities for all species. Changed host competencies that are set based on specific host-pathogen relationship
 
 3 hosts of interest
 - Peromyscus spp. mice (PERO)
@@ -1106,7 +1109,7 @@ Base parameters, same host densities
 
 
 B. miyamotoi
-```{r B. miyamotoi host competency}
+```{r 3.2 B. miyamotoi host competency}
 
 #########################
 # PERO : N = 50; A = .9
@@ -1284,7 +1287,7 @@ legend('topright', legend = c('PERO: A = 0.9', 'NEFU: A = 0.3', 'SCOC: A = 0.5')
 
 
 B.  burgdorferi
-```{r B. burgdorferi host competency}
+```{r 3.2 B. burgdorferi host competency}
 
 #########################
 # PERO : N = 50; A = .6
@@ -1461,8 +1464,8 @@ legend('topright', legend = c('NEFU: A = 0.9','PERO: A = 0.6', 'SCOC: A = 0.001'
 
 ```
 
-Comparing B. miyamotoi and B. burgdorferi with their unique host competencies
-```{r}
+Comparing B. miyamotoi and B. burgdorferi risk
+```{r 3.2 comparing B. miyamotoi and B. burgdorferi}
 #par(mfrow = c(1,1))
 
 #BM
@@ -1556,7 +1559,7 @@ bm_sum1 <- bm_nefu1 + bm_pero1 + bm_scoc1
 ## Question 3.3 How does host abundance influence B. burgdorferi and B. miyamotoi risk?
 
 B. miyamotoi
-```{r B. miyamotoi host densities}
+```{r 3.3 B. miyamotoi host densities}
 
 
 #########################
@@ -1734,7 +1737,7 @@ legend('topright', legend = c('PERO: N = 26, A = 0.9','SCOC: N = 35, A = 0.5', '
 ```
 
 B. burgdorferi
-```{r B. burgdorferi host density}
+```{r 3.3 B. burgdorferi host density}
 
 #########################
 # PERO : N = 26; A = .6
@@ -1911,7 +1914,7 @@ legend('topright', legend = c('NEFU: N = 20, A = 0.9','PERO: N = 26, A = 0.6', '
 ```
 
 Comparing B. miyamotoi and B. burgdorferi risk 
-```{r}
+```{r 3.3 comparing B. miyamotoi and B. burgdorferi}
 # BM
 plot(x = tset, y = X.simu.bm.pero2, type = 'l', las = 1, lwd = 3,
      xlab = 'Time (Days)', ylab = 'Number of Infected Ticks',
@@ -1991,7 +1994,7 @@ bm_sum2 <- bm_nefu2 + bm_pero2 + bm_scoc2
 ## Question 3.4 How does host-tick interactions influence B. miyamotoi and B. burgdorferi?
 
 B. miyamotoi
-```{r B. miyamotoi host-tick interactions}
+```{r 3.4 B. miyamotoi host-tick interactions}
 #########################
 # PERO : N = 26; A = .9; M = 10
 #########################
@@ -2168,7 +2171,7 @@ legend('topright', legend = c('PERO: N = 26, A = 0.9','SCOC: N = 35, A = 0.5', '
 
 
 B. burgdorferi
-``` {r B. burgdorferi host-tick interactions}
+``` {r 3.4 B. burgdorferi host-tick interactions}
 
 #########################
 # PERO : N = 26; A = .6; M = 10
@@ -2348,7 +2351,7 @@ legend('topright', legend = c('NEFU: N = 20, A = 0.9','PERO: N = 26, A = 0.6', '
 
 
 Comparing B. miyamotoi and B. burgdorferi risk
-``` {r} 
+``` {r 3.4 comparing B. miyamotoi and B. burgdorferi} 
 # BM
 plot(x = tset, y = X.simu.bm.pero3, type = 'l', las = 1, lwd = 3,
      xlab = 'Time (Days)', ylab = 'Number of Infected Ticks',
@@ -2427,7 +2430,11 @@ bm_sum2 <- bm_nefu3 + bm_pero3 + bm_scoc3
 
 
 
-Other analysis covered in 279
+# Other analysis covered in EEMB 279
+- max amount of infected ticks produced in simulations
+- proportion of the populations that have been infected
+- max transmission rate
+- the rate of change in R0 in response to a changing transmission rate (A)
 ```{r}
   b = .1 # birth rate ticks
   M = 20 # max number of ticks per host # OG 200

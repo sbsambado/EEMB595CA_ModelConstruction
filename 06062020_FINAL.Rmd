@@ -534,7 +534,7 @@ initial_values = c(T = T0, X = X0, H = H0, Y = Y0)
   
 parameters = c(b, M, d, A_hat, A, g, v)
 
-times = seq(0, 200, length.out = 1000)
+times = seq(0, 200, length.out = 2000)
 
 results = lsoda(initial_values, times, final.model, parameters)
 head(results)
@@ -550,7 +550,7 @@ Hcol = 'royalblue3'
 Ycol = 'royalblue3'
 
 plot(x = results[, "time"], y = results[, "T"], type = 'l', col=Tcol, las = 1, lwd=2, xlab = 'Time (days)', ylab = 'Number of Individuals', ylim = c(0,200), lty = 3,
-     xlim = c(0,200),main = "Host - Tick - Pathogen Population Model") # susceptible tick
+     xlim = c(0,500),main = "Host - Tick - Pathogen Population Model") # susceptible tick
 lines(x = results[, "time"], y = results[, "X"], col = Xcol, lwd = 2,lty = 1) # infected tick
 lines(x = results[, "time"], y = results[, "H"], col = Hcol, lwd = 2,lty = 3) # susceptible host
 lines(x = results[, "time"], y = results[, "Y"], col = Ycol, lwd = 2,lty = 1) # infected 
