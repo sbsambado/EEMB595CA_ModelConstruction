@@ -534,7 +534,7 @@ initial_values = c(T = T0, X = X0, H = H0, Y = Y0)
   
 parameters = c(b, M, d, A_hat, A, g, v)
 
-times = seq(0, 200, length.out = 2000)
+times = seq(0, 500, length.out = 2000)
 
 results = lsoda(initial_values, times, final.model, parameters)
 head(results)
@@ -3452,15 +3452,6 @@ plot(x = tset, y = Y.simu.bm.pero10/N, lwd = 2, type = 'l', col = 'maroon',
 # V = T + X --> V - T = X
 (V - T.simu.bm.pero10[length(tset)]) / V # ticks
 plot(x = tset, y = X.simu.bm.pero10/V, main = 'Need to fix tick proportion')
-
-
-
-
-
-
-
-
-
 
 
 
